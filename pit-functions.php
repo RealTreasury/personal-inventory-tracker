@@ -152,3 +152,18 @@ function pit_esc_html( $text ) {
     return esc_html( $text );
 }
 
+/**
+ * Clear cached report summaries when inventory items change.
+ *
+ * @param int $post_id Post ID.
+ * @return void
+ */
+function pit_clear_summary_cache( $post_id ) {
+    if ( 'pit_item' === get_post_type( $post_id ) ) {
+        PIT_Cache::delete( 'pit_reco_summary' );
+    }
+}
+
+add_action( 'save_post_pit_item', 'pit_clear_summary_cache' );
+add_action( 'delete_post', 'pit_clear_summary_cache' );
+

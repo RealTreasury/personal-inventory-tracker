@@ -15,12 +15,7 @@ class PIT_Reports {
      * @return array
      */
     public function get_summary() {
-        $summary = get_option( 'pit_reco_summary' );
-        if ( ! is_array( $summary ) ) {
-            $summary = $this->calculate_summary();
-            update_option( 'pit_reco_summary', $summary );
-        }
-        return $summary;
+        return PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
     }
 
     /**
