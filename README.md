@@ -83,6 +83,18 @@ Use WP-CLI to manage inventory from the command line.
 ## Building Assets
 Run `npm run build` to compile the JavaScript for both the front-end (`assets/app.js`) and admin (`assets/admin.js`) using esbuild.
 
+## Testing
+End-to-end tests use Playwright and spin up a WordPress environment with `wp-env`.
+
+```
+npm ci
+npx playwright test
+```
+
+The OCR test uses an inline base64-encoded PNG placeholder instead of a binary fixture.
+
+This repository runs the same command in GitHub Actions.
+
 ## FAQ
 **Does this plugin require a specific WordPress.com plan?**  
 Yes. Uploading custom plugins is available on Business or higher plans.
