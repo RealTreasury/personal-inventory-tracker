@@ -1,5 +1,6 @@
 <?php
-namespace PIT\Reports;
+
+namespace RealTreasury\Inventory\Reports;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -17,7 +18,7 @@ class Reports {
      * @return array
      */
     public function get_summary() {
-        return \PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
+        return \RealTreasury\Inventory\Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
     }
 
     /**
@@ -116,3 +117,4 @@ class Reports {
         echo '<script>(function(){var c=document.getElementById("pit-overview-chart");if(!c||!c.getContext)return;var ctx=c.getContext("2d");var vals=[' . $total_items . ',' . $low_stock . ',' . $due_soon . '];var max=Math.max.apply(null,vals)||1;var colors=["#4caf50","#ff9800","#f44336"];var width=50;for(var i=0;i<vals.length;i++){var h=(vals[i]/max)*100;ctx.fillStyle=colors[i];ctx.fillRect(10+i*(width+10),110-h,width,h);}ctx.fillStyle="#000";ctx.textBaseline="top";ctx.fillText("' . esc_js( __( 'Total', 'personal-inventory-tracker' ) ) . '",10,130);ctx.fillText("' . esc_js( __( 'Low', 'personal-inventory-tracker' ) ) . '",10+width+10,130);ctx.fillText("' . esc_js( __( 'Due', 'personal-inventory-tracker' ) ) . '",10+2*(width+10),130);}());</script>';
     }
 }
+\class_alias( __NAMESPACE__ . '\\Reports', 'PIT\\Reports\\Reports' );

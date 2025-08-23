@@ -18,18 +18,8 @@ define( 'PIT_PLUGIN_URL', plugin_dir_url( PIT_PLUGIN_FILE ) );
 define( 'PIT_PLUGIN_BASENAME', plugin_basename( PIT_PLUGIN_FILE ) );
 define( 'PIT_VERSION', '2.0.0' );
 
-// Include existing classes
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-cpt.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-taxonomy.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-import-export.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-capabilities.php';
-require_once PIT_PLUGIN_DIR . 'src/Admin/Admin.php';
-require_once PIT_PLUGIN_DIR . 'src/Reports/Reports.php';
-require_once PIT_PLUGIN_DIR . 'src/REST/Rest_Api.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-database.php';
+// Autoloader
+require_once PIT_PLUGIN_DIR . 'vendor/autoload.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 
 // Enhanced REST API Class
@@ -861,11 +851,11 @@ function pit_init_enhanced() {
 
 // Activation/Deactivation hooks
 function pit_activate() {
-    PIT_CPT::activate();
-    PIT_Taxonomy::activate();
-    PIT_Cron::activate();
-    PIT_Settings::activate();
-    PIT_Capabilities::add_capabilities();
+    \RealTreasury\Inventory\CPT::activate();
+    \RealTreasury\Inventory\Taxonomy::activate();
+    \RealTreasury\Inventory\Cron::activate();
+    \RealTreasury\Inventory\Settings::activate();
+    \RealTreasury\Inventory\Capabilities::add_capabilities();
     
     // Add enhanced options
     add_option('pit_public_access', false);
@@ -874,16 +864,16 @@ function pit_activate() {
     add_option('pit_currency', '$');
     add_option('pit_version', PIT_VERSION);
 
-    PIT_Database::migrate();
+    \RealTreasury\Inventory\Database::migrate();
 
     flush_rewrite_rules();
 }
 
 function pit_deactivate() {
-    PIT_CPT::deactivate();
-    PIT_Taxonomy::deactivate();
-    PIT_Cron::deactivate();
-    PIT_Capabilities::remove_capabilities();
+    \RealTreasury\Inventory\CPT::deactivate();
+    \RealTreasury\Inventory\Taxonomy::deactivate();
+    \RealTreasury\Inventory\Cron::deactivate();
+    \RealTreasury\Inventory\Capabilities::remove_capabilities();
     flush_rewrite_rules();
 }
 
@@ -892,13 +882,14 @@ register_activation_hook(PIT_PLUGIN_FILE, 'pit_activate');
 register_deactivation_hook(PIT_PLUGIN_FILE, 'pit_deactivate');
 
 // Initialize
-add_action('init', [PIT_CPT::class, 'register']);
-add_action('init', [PIT_Taxonomy::class, 'register']);
-add_action('plugins_loaded', [PIT_Database::class, 'migrate']);
+add_action('init', [\RealTreasury\Inventory\CPT::class, 'register']);
+add_action('init', [\RealTreasury\Inventory\Taxonomy::class, 'register']);
+add_action('plugins_loaded', [\RealTreasury\Inventory\Database::class, 'migrate']);
 add_action('plugins_loaded', function() {
     pit_init_enhanced();
-    ( new \PIT\Admin\Admin() )->init();
-    PIT_Cron::init();
+    ( new \RealTreasury\Inventory\Admin\Admin() )->init();
+    \RealTreasury\Inventory\Cron::init();
+    \RealTreasury\Inventory\Settings::init();
 });
 
 // Admin enqueue (keep existing admin functionality)

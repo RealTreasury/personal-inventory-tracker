@@ -1,9 +1,12 @@
 <?php
+
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Capabilities {
+class Capabilities {
 
     public static function add_capabilities() {
         $roles = array( 'administrator', 'editor' );
@@ -33,3 +36,5 @@ class PIT_Capabilities {
         }
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\Capabilities', 'PIT_Capabilities' );

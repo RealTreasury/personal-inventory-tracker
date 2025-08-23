@@ -1,4 +1,9 @@
 <?php
+
+namespace RealTreasury\Inventory;
+
+use WP_List_Table;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -7,7 +12,7 @@ if ( ! class_exists( 'WP_List_Table' ) ) {
     require_once ABSPATH . 'wp-admin/includes/class-wp-list-table.php';
 }
 
-class PIT_List_Table extends WP_List_Table {
+class List_Table extends WP_List_Table {
 
     public function __construct() {
         parent::__construct(
@@ -114,7 +119,7 @@ class PIT_List_Table extends WP_List_Table {
             );
         }
 
-        $query = new WP_Query( $args );
+        $query = new \WP_Query( $args );
         $items = array();
 
         foreach ( $query->posts as $post ) {
@@ -159,6 +164,8 @@ class PIT_List_Table extends WP_List_Table {
     }
 
     protected function export_items( $item_ids ) {
-        PIT_Import_Export::output_csv( $item_ids );
+        Import_Export::output_csv( $item_ids );
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\List_Table', 'PIT_List_Table' );
