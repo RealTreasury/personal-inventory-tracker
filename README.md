@@ -83,6 +83,12 @@ Use WP-CLI to manage inventory from the command line.
 ## Building Assets
 Run `npm run build` to compile the JavaScript for both the front-end (`assets/app.js`) and admin (`assets/admin.js`) using esbuild.
 
+## Testing
+End-to-end tests use Playwright with a WordPress environment provided by `wp-env`.
+
+1. Ensure Docker is running.
+2. Run `npm run test:e2e` to execute the browser tests. Fixtures seed and clean inventory data automatically.
+
 ## FAQ
 **Does this plugin require a specific WordPress.com plan?**  
 Yes. Uploading custom plugins is available on Business or higher plans.

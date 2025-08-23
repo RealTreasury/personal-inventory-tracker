@@ -16,5 +16,10 @@ jobs:
         run: npm ci
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
+      - name: Start WordPress environment
+        run: npx wp-env start
       - name: Run Playwright tests
         run: npm run test:e2e
+      - name: Stop WordPress environment
+        if: always()
+        run: npx wp-env stop
