@@ -701,16 +701,82 @@ function pit_enqueue_enhanced_frontend() {
 }
 
 // Enhanced shortcode
-function pit_enhanced_shortcode($atts = []) {
-    $atts = shortcode_atts([
-        'view' => 'dashboard',
-        'public' => 'false',
-        'readonly' => 'false'
-    ], $atts);
+function pit_enhanced_shortcode( $atts = [] ) {
+    $atts = shortcode_atts(
+        [
+            'view'     => 'dashboard',
+            'public'   => 'false',
+            'readonly' => 'false',
+        ],
+        $atts
+    );
 
     pit_enqueue_enhanced_frontend();
-    
-    return '<div id="pit-enhanced-app" data-view="' . esc_attr($atts['view']) . '" data-public="' . esc_attr($atts['public']) . '" data-readonly="' . esc_attr($atts['readonly']) . '"></div>';
+
+    $quick_add_notice = '';
+    $read_only        = get_option( 'pit_read_only_mode', false );
+
+    if (
+        isset( $_POST['action'], $_POST['pit_nonce'] ) &&
+        'pit_quick_add' === $_POST['action'] &&
+        wp_verify_nonce( $_POST['pit_nonce'], 'pit_quick_add' ) &&
+        current_user_can( 'edit_posts' ) &&
+        ! $read_only
+    ) {
+        $item_name = sanitize_text_field( wp_unslash( $_POST['item_name'] ) );
+        $quantity  = isset( $_POST['quantity'] ) ? absint( $_POST['quantity'] ) : 0;
+
+        if ( $item_name ) {
+            $post_id = wp_insert_post(
+                [
+                    'post_type'   => 'pit_item',
+                    'post_title'  => $item_name,
+                    'post_status' => 'publish',
+                ]
+            );
+
+            if ( ! is_wp_error( $post_id ) ) {
+                update_post_meta( $post_id, 'pit_qty', $quantity );
+                update_post_meta( $post_id, 'pit_created_via', 'fallback' );
+
+                $quick_add_notice = '<div style="background: #d1fae5; border: 1px solid #a7f3d0; color: #065f46; padding: 1rem; border-radius: 8px; margin: 1rem 0;">' .
+                    esc_html(
+                        sprintf(
+                            __( 'Successfully added "%s" with quantity %d', 'personal-inventory-tracker' ),
+                            $item_name,
+                            $quantity
+                        )
+                    ) .
+                    '</div>';
+            }
+        }
+    }
+
+    $can_edit   = current_user_can( 'edit_posts' );
+    $can_manage = current_user_can( 'manage_options' );
+    $settings   = [
+        'publicAccess'      => get_option( 'pit_public_access', false ),
+        'readOnlyMode'      => $read_only,
+        'defaultConfidence' => get_option( 'pit_ocr_confidence', 60 ),
+        'currency'          => get_option( 'pit_currency', '$' ),
+        'dateFormat'        => get_option( 'date_format' ),
+        'timeFormat'        => get_option( 'time_format' ),
+    ];
+    $has_access = $settings['publicAccess'] || is_user_logged_in();
+
+    $recent_items = get_posts(
+        [
+            'post_type'      => 'pit_item',
+            'posts_per_page' => 10,
+            'post_status'    => 'publish',
+        ]
+    );
+
+    $view = sanitize_key( $atts['view'] );
+
+    ob_start();
+    include PIT_PLUGIN_DIR . 'templates/frontend-app.php';
+    return ob_get_clean();
 }
 
 // Initialize enhanced functionality
