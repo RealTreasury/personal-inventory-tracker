@@ -1,8 +1,22 @@
 let tesseractPromise;
 
-function loadTesseract() {
+export function loadTesseract() {
   if (!tesseractPromise) {
-    tesseractPromise = import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
+    tesseractPromise = (async () => {
+      try {
+        return await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
+      } catch (cdnErr) {
+        console.warn('CDN load failed, attempting local fallback.');
+        try {
+          return await import('./tesseract.esm.min.js');
+        } catch (localErr) {
+          console.error('Tesseract failed to load.', localErr);
+          throw new Error(
+            'Failed to load OCR engine. Please check your internet connection or plugin installation.'
+          );
+        }
+      }
+    })();
   }
   return tesseractPromise;
 }
@@ -19,14 +33,22 @@ export async function extractItemSuggestions(image, minConfidence = 60) {
     console.warn('OCR is only supported in browser environments.');
     return [];
   }
-  const Tesseract = await loadTesseract();
-  const { data } = await Tesseract.recognize(image, 'eng');
-  return data.lines
-    .filter(line => line.confidence >= minConfidence)
-    .map(line => ({
-      text: line.text.trim(),
-      confidence: line.confidence,
-    }));
+  try {
+    const Tesseract = await loadTesseract();
+    const { data } = await Tesseract.recognize(image, 'eng');
+    return data.lines
+      .filter(line => line.confidence >= minConfidence)
+      .map(line => ({
+        text: line.text.trim(),
+        confidence: line.confidence,
+      }));
+  } catch (err) {
+    console.warn(err.message);
+    if (typeof window !== 'undefined') {
+      alert(err.message);
+    }
+    return [];
+  }
 }
 
 /**

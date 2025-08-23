@@ -26,6 +26,20 @@ function processCss() {
   fs.writeFileSync(path.join(__dirname, 'assets', 'app.css'), css);
 }
 
+function copyTesseract() {
+  const srcFile = path.join(
+    __dirname,
+    'node_modules',
+    'tesseract.js',
+    'dist',
+    'tesseract.esm.min.js'
+  );
+  const destAsset = path.join(__dirname, 'assets', 'tesseract.esm.min.js');
+  const destInclude = path.join(__dirname, 'includes', 'js', 'tesseract.esm.min.js');
+  fs.copyFileSync(srcFile, destAsset);
+  fs.copyFileSync(srcFile, destInclude);
+}
+
 const builds = [
   {
     entryPoints: { app: 'src/frontend-app.jsx' },
@@ -83,6 +97,7 @@ async function build(config) {
 
 async function run() {
   processCss();
+  copyTesseract();
   const enhancedReadme = `
 # Personal Inventory Tracker Enhanced
 
