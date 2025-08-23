@@ -1,0 +1,4 @@
+post_title,qty,reorder_threshold,reorder_interval,last_reordered
+Apples,10,2,30,1700000000
+Bananas,5,1,7,1700000000
+Milk,1,2,14,1700000000
