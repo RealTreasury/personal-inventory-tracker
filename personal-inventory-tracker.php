@@ -24,6 +24,11 @@ require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-blocks.php';
 
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    WP_CLI::add_command( 'pit inventory', 'RealTreasury\Inventory\CLI\Inventory_Command' );
+    WP_CLI::add_command( 'pit cache', 'RealTreasury\Inventory\CLI\Cache_Command' );
+}
+
 // Enhanced REST API Class
 class PIT_Enhanced_REST {
     

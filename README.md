@@ -49,6 +49,16 @@ Milk,1,2,14,1700000000
 
 A copy of this sample CSV is available at [`docs/sample.csv`](docs/sample.csv).
 
+## CLI Commands
+Use WP-CLI to manage inventory from the command line.
+
+- Export items to CSV:
+  `wp pit inventory export --file=items.csv`
+- Import items from CSV:
+  `wp pit inventory import items.csv`
+- Clear cached data:
+  `wp pit cache clear`
+
 ## OCR Tips
 - Use well-lit, high-contrast photos.
 - Crop images to the receipt area before scanning.
