@@ -1,7 +1,13 @@
-export function initializeApp() {
-  return 'Enhanced app initialized';
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import InventoryApp from './components/InventoryApp';
+
+const container = document.getElementById('pit-enhanced-app');
+
+if (container) {
+  const root = createRoot(container);
+  root.render(<InventoryApp />);
 }
 
-export function getVersion() {
-  return '1.0.0';
-}
+export default InventoryApp;
+
