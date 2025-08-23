@@ -655,6 +655,102 @@ class PIT_Enhanced_REST {
         return null;
     }
 
+    // Import data
+    public function import_data( $request ) {
+        $params = $request->get_json_params();
+        $items  = isset( $params['items'] ) && is_array( $params['items'] ) ? $params['items'] : array();
+
+        if ( empty( $items ) ) {
+            return new WP_Error(
+                'no_items',
+                __( 'No items supplied for import.', 'personal-inventory-tracker' ),
+                array( 'status' => 400 )
+            );
+        }
+
+        $imported = 0;
+        $skipped  = 0;
+        $errors   = array();
+
+        foreach ( $items as $index => $item ) {
+            $title = isset( $item['title'] ) ? sanitize_text_field( $item['title'] ) : '';
+
+            if ( '' === $title ) {
+                $skipped++;
+                $errors[] = sprintf( __( 'Row %d missing title', 'personal-inventory-tracker' ), $index + 1 );
+                continue;
+            }
+
+            $post_id = 0;
+            if ( ! empty( $item['id'] ) ) {
+                $post_id = absint( $item['id'] );
+            } else {
+                $existing = get_page_by_title( $title, OBJECT, 'pit_item' );
+                if ( $existing ) {
+                    $post_id = $existing->ID;
+                }
+            }
+
+            if ( $post_id ) {
+                $result = $post_id;
+            } else {
+                $result = wp_insert_post(
+                    array(
+                        'post_type'   => 'pit_item',
+                        'post_title'  => $title,
+                        'post_status' => 'publish',
+                    ),
+                    true
+                );
+            }
+
+            if ( is_wp_error( $result ) ) {
+                $skipped++;
+                $errors[] = sprintf( __( 'Row %d could not be imported', 'personal-inventory-tracker' ), $index + 1 );
+                continue;
+            }
+
+            $post_id = $result;
+
+            $meta_map = array(
+                'qty'       => 'pit_qty',
+                'unit'      => 'pit_unit',
+                'threshold' => 'pit_threshold',
+                'notes'     => 'pit_notes',
+            );
+
+            foreach ( $meta_map as $key => $meta_key ) {
+                if ( isset( $item[ $key ] ) ) {
+                    if ( in_array( $key, array( 'qty', 'threshold' ), true ) ) {
+                        $value = absint( $item[ $key ] );
+                    } elseif ( 'notes' === $key ) {
+                        $value = sanitize_textarea_field( $item[ $key ] );
+                    } else {
+                        $value = sanitize_text_field( $item[ $key ] );
+                    }
+                    update_post_meta( $post_id, $meta_key, $value );
+                }
+            }
+
+            if ( ! empty( $item['category'] ) ) {
+                $term = get_term_by( 'slug', sanitize_text_field( $item['category'] ), 'pit_category' );
+                if ( $term && ! is_wp_error( $term ) ) {
+                    wp_set_post_terms( $post_id, array( $term->term_id ), 'pit_category' );
+                }
+            }
+
+            $imported++;
+        }
+
+        return rest_ensure_response(
+            array(
+                'imported' => $imported,
+                'skipped'  => $skipped,
+                'errors'   => $errors,
+            )
+        );
+    }
+
     // Export data
     public function export_data($request) {
         $format = $request->get_param('format') ?: 'csv';

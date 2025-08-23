@@ -3,20 +3,11 @@ import {
   Upload,
   Download,
   FileText,
-  Image,
-  Database,
   CheckCircle,
   AlertCircle,
-  Info,
   RefreshCw,
-  Eye,
-  EyeOff,
-  Trash2,
-  Edit,
-  Settings,
   FileJson,
   FileSpreadsheet,
-  Camera,
   Link,
   X
 } from 'lucide-react';
@@ -82,13 +73,17 @@ const ImportExportView = ({ onItemsUpdated }) => {
       if (saved) {
         setFieldMapping(JSON.parse(saved));
       }
-    } catch (e) {}
+    } catch (e) {
+      // Ignore
+    }
   }, []);
 
   useEffect(() => {
     try {
       localStorage.setItem('pit_field_mapping', JSON.stringify(fieldMapping));
-    } catch (e) {}
+    } catch (e) {
+      // Ignore
+    }
   }, [fieldMapping]);
 
   const handleFileSelect = (event) => {
@@ -105,7 +100,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
     if (files.length > 0) {
       processFile(files[0]);
     }
-  }, []);
+  }, [processFile]);
 
   const handleDragOver = useCallback((event) => {
     event.preventDefault();
@@ -176,7 +171,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
       for (let i = 0; i < mappedData.length; i += batchSize) {
         const batch = mappedData.slice(i, i + batchSize);
         try {
-          const response = await fetch(`${window.pitApp?.restUrl}items/import`, {
+          const response = await fetch(`${window.pitApp?.restUrl}import`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -322,8 +317,9 @@ const ImportExportView = ({ onItemsUpdated }) => {
                 <h3 className="font-semibold text-gray-900 mb-3">Select Import Format</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Object.entries(formats.import).map(([key, format]) => (
-                    <div
+                    <button
                       key={key}
+                      type="button"
                       onClick={() => setImportFormat(key)}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${importFormat === key ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'}`}
                     >
@@ -334,16 +330,17 @@ const ImportExportView = ({ onItemsUpdated }) => {
                           <div className="text-sm text-gray-500">{format.description}</div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
               {importFormat === 'api' ? (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">API Endpoint URL</label>
+                    <label htmlFor="pit-api-endpoint" className="block text-sm font-medium text-gray-700 mb-2">API Endpoint URL</label>
                     <div className="flex space-x-3">
                       <input
+                        id="pit-api-endpoint"
                         ref={apiUrlRef}
                         type="url"
                         placeholder="https://api.example.com/inventory"
@@ -520,9 +517,11 @@ const ImportExportView = ({ onItemsUpdated }) => {
                 <h3 className="font-semibold text-gray-900 mb-3">Select Export Format</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Object.entries(formats.export).map(([key, format]) => (
-                    <div
+                    <button
                       key={key}
+                      type="button"
                       onClick={() => setExportFormat(key)}
+                      disabled={key === 'excel'}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         exportFormat === key
                           ? 'border-blue-500 bg-blue-50'
@@ -536,7 +535,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
                           <div className="text-sm text-gray-500">{format.description}</div>
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
         wp_enqueue_script( 'pit-import-export', PIT_PLUGIN_URL . 'assets/import-export.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
         wp_localize_script( 'pit-import-export', 'pitApp', array(
-            'restUrl'      => esc_url_raw( rest_url( 'pit/v1/' ) ),
+            'restUrl'      => esc_url_raw( rest_url( 'pit/v2/' ) ),
             'nonce'        => wp_create_nonce( 'wp_rest' ),
             'capabilities' => array(
                   'import' => current_user_can( 'manage_inventory_items' ),
