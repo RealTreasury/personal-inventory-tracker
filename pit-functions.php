@@ -17,9 +17,10 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
  * Retrieve all meta data for an inventory item.
  *
  * @param int $post_id Inventory item post ID.
+ *
  * @return array Array of meta key => value pairs.
  */
-function pit_get_item( $post_id ) {
+function pit_get_item( int $post_id ): array {
     $post_id = absint( $post_id );
     if ( ! $post_id ) {
         return array();
@@ -41,9 +42,10 @@ function pit_get_item( $post_id ) {
  *
  * @param int   $post_id Post ID.
  * @param array $data    Data to update.
+ *
  * @return array|WP_Error Updated item array on success or WP_Error on failure.
  */
-function pit_update_item( $post_id, $data ) {
+function pit_update_item( int $post_id, array $data ) {
     $post_id = absint( $post_id );
     if ( ! $post_id || ! is_array( $data ) ) {
         return new WP_Error( 'pit_invalid_args', __( 'Invalid item data.', 'personal-inventory-tracker' ) );
@@ -90,12 +92,13 @@ function pit_update_item( $post_id, $data ) {
  * Determine whether an item needs to be reordered.
  *
  * @param array $item Item data.
+ *
  * @return array {
  *     @type bool   $needed Whether reorder is needed.
  *     @type string $reason Reason for reorder ('quantity', 'interval', or '').
  * }
  */
-function pit_calculate_reorder_needed( $item ) {
+function pit_calculate_reorder_needed( array $item ): array {
     $qty               = isset( $item['qty'] ) ? absint( $item['qty'] ) : 0;
     $threshold         = isset( $item['reorder_threshold'] ) ? absint( $item['reorder_threshold'] ) : 0;
     $interval          = isset( $item['reorder_interval'] ) ? absint( $item['reorder_interval'] ) : 0; // Days.
@@ -146,9 +149,10 @@ function pit_sanitize_int( $value ) {
  * Escape a string for safe HTML output.
  *
  * @param string $text Text to escape.
- * @return string
+ *
+ * @return string Escaped text.
  */
-function pit_esc_html( $text ) {
+function pit_esc_html( string $text ): string {
     return esc_html( $text );
 }
 
@@ -156,9 +160,10 @@ function pit_esc_html( $text ) {
  * Clear cached report summaries when inventory items change.
  *
  * @param int $post_id Post ID.
+ *
  * @return void
  */
-function pit_clear_inventory_caches( $post_id ) {
+function pit_clear_inventory_caches( int $post_id ): void {
     if ( 'pit_item' === get_post_type( $post_id ) ) {
         PIT_Cache::clear_inventory_caches();
     }

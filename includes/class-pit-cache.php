@@ -29,7 +29,7 @@ class PIT_Cache {
      *
      * @return mixed Cached value.
      */
-    public static function get_or_set( $key, $callback, $expiration = HOUR_IN_SECONDS ) {
+    public static function get_or_set( string $key, callable $callback, int $expiration = HOUR_IN_SECONDS ) {
         $value = get_transient( $key );
         if ( false === $value ) {
             $value = call_user_func( $callback );
@@ -46,7 +46,7 @@ class PIT_Cache {
      *
      * @return void
      */
-    public static function clear_by_pattern( $pattern ) {
+    public static function clear_by_pattern( string $pattern ): void {
         global $wpdb;
 
         $like     = '%' . $wpdb->esc_like( $pattern ) . '%';
@@ -68,7 +68,7 @@ class PIT_Cache {
      *
      * @return void
      */
-    public static function clear_inventory_caches() {
+    public static function clear_inventory_caches(): void {
         self::clear_by_pattern( 'pit_' );
     }
 }
