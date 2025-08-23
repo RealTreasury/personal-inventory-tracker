@@ -1,1 +1,599 @@
-/* Styles for the PIT App block */
+/* Enhanced Personal Inventory Tracker Styles */
+
+/* Root Variables */
+:root {
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --primary-light: #dbeafe;
+  --secondary: #6b7280;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+/* Reset and Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+#pit-app {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--gray-900);
+  background-color: var(--gray-50);
+}
+
+/* Header Styles */
+.pit-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  padding: 1.5rem 0;
+  box-shadow: var(--shadow-lg);
+}
+
+.pit-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+/* Navigation Styles */
+.pit-nav {
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0.75rem 0;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.pit-nav button {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--gray-600);
+  font-weight: 500;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pit-nav button:hover {
+  background-color: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.pit-nav button.active {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+/* Card Styles */
+.pit-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  transition: all 0.2s ease;
+}
+
+.pit-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--gray-300);
+}
+
+/* Stats Cards */
+.pit-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.pit-stat-card {
+  padding: 2rem;
+  border-radius: var(--radius-xl);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.pit-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  transform: translate(30px, -30px);
+}
+
+.pit-stat-card.primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.pit-stat-card.success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.pit-stat-card.warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+}
+
+.pit-stat-card.purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.pit-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.pit-stat-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Inventory Grid */
+.pit-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* Item Card */
+.pit-item-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--gray-200);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.pit-item-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.pit-item-status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.pit-item-status.in-stock {
+  background-color: var(--success);
+}
+
+.pit-item-status.low-stock {
+  background-color: var(--warning);
+}
+
+.pit-item-status.out-of-stock {
+  background-color: var(--danger);
+}
+
+.pit-item-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--gray-900);
+}
+
+.pit-item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pit-quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pit-qty-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pit-qty-btn:hover {
+  background: var(--gray-200);
+  color: var(--gray-800);
+}
+
+.pit-qty-display {
+  min-width: 2rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+/* Search and Filter Bar */
+.pit-search-bar {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.pit-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.pit-search-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  ring: 2px solid var(--primary-light);
+}
+
+.pit-search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-400);
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Filter Controls */
+.pit-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--gray-200);
+}
+
+.pit-filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  background: white;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.pit-filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Buttons */
+.pit-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  border: none;
+  font-size: 0.875rem;
+}
+
+.pit-btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.pit-btn-primary:hover {
+  background: var(--primary-dark);
+}
+
+.pit-btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.pit-btn-secondary:hover {
+  background: var(--gray-200);
+}
+
+.pit-btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.pit-btn-danger:hover {
+  background: #dc2626;
+}
+
+/* Charts and Analytics */
+.pit-chart-container {
+  position: relative;
+  height: 300px;
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--gray-200);
+}
+
+.pit-chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--gray-900);
+}
+
+/* Alert Styles */
+.pit-alert {
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.pit-alert-warning {
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+}
+
+.pit-alert-success {
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.pit-alert-danger {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* OCR Scanner Styles */
+.pit-ocr-scanner {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: var(--radius-xl);
+  border: 2px dashed var(--gray-300);
+  transition: all 0.2s ease;
+}
+
+.pit-ocr-scanner:hover {
+  border-color: var(--primary);
+  background: var(--gray-50);
+}
+
+.pit-ocr-scanner.active {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.pit-ocr-results {
+  margin-top: 2rem;
+}
+
+.pit-ocr-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--gray-50);
+  border-radius: var(--radius);
+  margin-bottom: 0.5rem;
+}
+
+/* Import/Export Styles */
+.pit-import-area {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: 2rem;
+  border: 2px dashed var(--gray-300);
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.pit-import-area:hover,
+.pit-import-area.dragover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+/* Loading States */
+.pit-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.pit-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--gray-200);
+  border-top: 3px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .pit-nav {
+    padding: 0.5rem 0;
+  }
+  
+  .pit-nav button span {
+    display: none;
+  }
+  
+  .pit-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pit-inventory-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .pit-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pit-item-card {
+    padding: 1rem;
+  }
+  
+  .pit-stat-value {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .pit-item-card {
+    margin: 0.5rem;
+  }
+  
+  .pit-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+  
+  .pit-filters {
+    padding: 0.75rem;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gray-50: #1f2937;
+    --gray-100: #374151;
+    --gray-200: #4b5563;
+    --gray-300: #6b7280;
+    --gray-900: #f9fafb;
+  }
+}
+
+/* Custom Scrollbar */
+.pit-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.pit-scrollable::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: 3px;
+}
+
+.pit-scrollable::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  border-radius: 3px;
+}
+
+.pit-scrollable::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+/* Animation Classes */
+.pit-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.pit-slide-up {
+  animation: slideUp 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus States */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .pit-nav,
+  .pit-filters,
+  button {
+    display: none !important;
+  }
+  
+  .pit-item-card {
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+}
+
