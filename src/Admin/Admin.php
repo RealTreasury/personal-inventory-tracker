@@ -385,6 +385,7 @@ document.addEventListener('DOMContentLoaded',function(){
                 'restUrl' => esc_url_raw( rest_url( 'pit/v2/' ) ),
                 'nonce'   => wp_create_nonce( 'wp_rest' ),
                 'items'   => $choices,
+                'tesseractUrl' => esc_url_raw( PIT_PLUGIN_URL . 'assets/tesseract.esm.min.js' ),
             )
         );
     }
