@@ -28,7 +28,7 @@ Personal Inventory Tracker helps households keep track of items using a custom p
 
 == Installation ==
 1. Upload `personal-inventory-tracker` to the `/wp-content/plugins/` directory or install via the Plugins screen.
-2. Run `npm run build` if you need to regenerate front-end assets.
+2. Run `npm run build` if you need to regenerate JavaScript assets.
 3. Activate the plugin through the Plugins screen in WordPress.
 4. Configure settings under **Settings → Personal Inventory**.
 

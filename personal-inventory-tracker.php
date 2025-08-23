@@ -51,9 +51,14 @@ add_action( 'plugins_loaded', function() {
 } );
 
 function pit_enqueue_frontend() {
-    wp_enqueue_style( 'pit-app', PIT_PLUGIN_URL . 'assets/app.css', array(), '1.0.0' );
+    $app_js  = PIT_PLUGIN_DIR . 'assets/app.js';
+    $app_css = PIT_PLUGIN_DIR . 'assets/app.css';
+    $ver_js  = file_exists( $app_js ) ? filemtime( $app_js ) : false;
+    $ver_css = file_exists( $app_css ) ? filemtime( $app_css ) : false;
+
+    wp_enqueue_style( 'pit-app', PIT_PLUGIN_URL . 'assets/app.css', array(), $ver_css );
     wp_enqueue_script( 'tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js', array(), '5.0.0', true );
-    wp_enqueue_script( 'pit-app', PIT_PLUGIN_URL . 'assets/app.js', array(), '1.0.0', true );
+    wp_enqueue_script( 'pit-app', PIT_PLUGIN_URL . 'assets/app.js', array(), $ver_js, true );
 
     wp_localize_script( 'pit-app', 'pitApp', array(
         'restUrl' => esc_url_raw( rest_url( 'pit/v1/' ) ),
@@ -74,6 +79,29 @@ function pit_enqueue_frontend() {
         ),
     ) );
 }
+
+function pit_enqueue_admin( $hook ) {
+    if ( false === strpos( $hook, 'pit_' ) ) {
+        return;
+    }
+
+    $admin_js  = PIT_PLUGIN_DIR . 'assets/admin.js';
+    $admin_css = PIT_PLUGIN_DIR . 'assets/admin.css';
+    $ver_js    = file_exists( $admin_js ) ? filemtime( $admin_js ) : false;
+    $ver_css   = file_exists( $admin_css ) ? filemtime( $admin_css ) : false;
+
+    wp_enqueue_style( 'pit-admin', PIT_PLUGIN_URL . 'assets/admin.css', array(), $ver_css );
+    wp_enqueue_script( 'pit-admin', PIT_PLUGIN_URL . 'assets/admin.js', array(), $ver_js, true );
+
+    wp_localize_script( 'pit-admin', 'pitAdmin', array(
+        'restUrl' => esc_url_raw( rest_url( 'pit/v1/' ) ),
+        'nonce'   => wp_create_nonce( 'wp_rest' ),
+        'i18n'    => array(
+            'scanReceipt' => __( 'Scan Receipt', 'personal-inventory-tracker' ),
+        ),
+    ) );
+}
+add_action( 'admin_enqueue_scripts', 'pit_enqueue_admin' );
 
 function pit_app_shortcode() {
     pit_enqueue_frontend();
