@@ -9,7 +9,11 @@ const ShoppingListView = () => {
   useEffect(() => {
     const fetchList = async () => {
       try {
-        const response = await fetch('/wp-json/pit/v2/shopping-list');
+        const response = await fetch(`${window.pitApp.restUrl}shopping-list`, {
+          headers: {
+            'X-WP-Nonce': window.pitApp.nonce,
+          },
+        });
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
