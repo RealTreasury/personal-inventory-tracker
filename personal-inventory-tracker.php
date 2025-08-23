@@ -897,22 +897,35 @@ add_action('admin_menu', function() {
 });
 
 function pit_enhanced_settings_page() {
-    if (isset($_POST['submit'])) {
-        update_option('pit_public_access', !empty($_POST['public_access']));
-        update_option('pit_read_only_mode', !empty($_POST['read_only_mode']));
-        update_option('pit_ocr_confidence', absint($_POST['ocr_confidence']));
-        update_option('pit_currency', sanitize_text_field($_POST['currency']));
-        echo '<div class="notice notice-success"><p>' . __('Settings saved!', 'personal-inventory-tracker') . '</p></div>';
+    if ( isset( $_POST['submit'] ) ) {
+        check_admin_referer( 'pit_enhanced_settings', 'pit_nonce' );
+
+        if ( current_user_can( 'manage_inventory_items' ) ) {
+            $public_access  = isset( $_POST['public_access'] ) ? boolval( wp_unslash( $_POST['public_access'] ) ) : false;
+            $read_only_mode = isset( $_POST['read_only_mode'] ) ? boolval( wp_unslash( $_POST['read_only_mode'] ) ) : false;
+            $ocr_confidence = isset( $_POST['ocr_confidence'] ) ? absint( wp_unslash( $_POST['ocr_confidence'] ) ) : 60;
+            $currency       = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '$';
+
+            update_option( 'pit_public_access', $public_access );
+            update_option( 'pit_read_only_mode', $read_only_mode );
+            update_option( 'pit_ocr_confidence', $ocr_confidence );
+            update_option( 'pit_currency', $currency );
+
+            echo '<div class="notice notice-success"><p>' . __( 'Settings saved!', 'personal-inventory-tracker' ) . '</p></div>';
+        } else {
+            echo '<div class="notice notice-error"><p>' . __( 'You do not have permission to save these settings.', 'personal-inventory-tracker' ) . '</p></div>';
+        }
     }
 
-    $public_access = get_option('pit_public_access', false);
-    $read_only_mode = get_option('pit_read_only_mode', false);
-    $ocr_confidence = get_option('pit_ocr_confidence', 60);
-    $currency = get_option('pit_currency', '$');
+    $public_access  = get_option( 'pit_public_access', false );
+    $read_only_mode = get_option( 'pit_read_only_mode', false );
+    $ocr_confidence = get_option( 'pit_ocr_confidence', 60 );
+    $currency       = get_option( 'pit_currency', '$' );
     ?>
     <div class="wrap">
         <h1><?php _e('Enhanced Settings', 'personal-inventory-tracker'); ?></h1>
         <form method="post">
+            <?php wp_nonce_field( 'pit_enhanced_settings', 'pit_nonce' ); ?>
             <table class="form-table">
                 <tr>
                     <th><?php _e('Public Access', 'personal-inventory-tracker'); ?></th>
