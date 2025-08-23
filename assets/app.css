@@ -1,0 +1,6 @@
+#pit-app { font-family: Arial, sans-serif; }
+.pit-controls { margin-bottom: 1rem; }
+.pit-item { display: flex; align-items: center; gap: .5rem; margin-bottom: .25rem; }
+.pit-item.purchased { text-decoration: line-through; color: #777; }
+.pit-item input[type="number"] { width: 60px; }
+.pit-item button { margin-left: .25rem; }
