@@ -1,0 +1,23 @@
+#pit-app {
+    font-family: sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+}
+#pit-app table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1em;
+}
+#pit-app th, #pit-app td {
+    border: 1px solid #ccc;
+    padding: 4px;
+    text-align: left;
+}
+#pit-app input[type="text"],
+#pit-app select {
+    padding: 4px;
+    margin-right: 0.5em;
+}
+#pit-app .actions button {
+    margin-right: 0.25em;
+}
