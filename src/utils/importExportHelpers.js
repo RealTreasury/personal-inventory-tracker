@@ -3,7 +3,8 @@ export function parseCSV(file, defaultMappings) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = e.target.result;
+        // Remove UTF-8 BOM if present to ensure clean parsing
+        const text = e.target.result.replace(/^\uFEFF/, '');
         const lines = text
           .split('\n')
           .map((line) => line.trim())
