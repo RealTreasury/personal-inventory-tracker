@@ -1,34 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 
-const AnalyticsView = () => {
-  const [items, setItems] = useState([]);
+const AnalyticsView = ({ items = [], purchaseTrends = [], timeRange = 30 }) => {
   const [selectedMetric, setSelectedMetric] = useState('purchases');
 
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const response = await fetch('/wp-json/pit/v2/items');
-        if (response.ok) {
-          const json = await response.json();
-          setItems(json);
-        }
-      } catch (err) {
-        // errors silently ignored; handle in production as needed
-      }
-    };
+  // Calculate cutoff date based on selected time range
+  const cutoffDate = useMemo(
+    () => new Date(Date.now() - timeRange * 24 * 60 * 60 * 1000),
+    [timeRange]
+  );
 
-    fetchItems();
-  }, []);
+  // Filter items and purchase trends to the selected range
+  const recentItems = useMemo(
+    () => items.filter(item => new Date(item.last_purchased) >= cutoffDate),
+    [items, cutoffDate]
+  );
 
-  const cutoffDate = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), []);
+  const recentTrends = useMemo(
+    () => purchaseTrends.filter(trend => new Date(trend.date) >= cutoffDate),
+    [purchaseTrends, cutoffDate]
+  );
 
   const metrics = useMemo(
     () => ({
       purchases: {
         label: 'Recent Purchases',
         icon: CheckCircle,
-        filter: item => new Date(item.last_purchased) >= cutoffDate,
+        filter: () => true,
       },
       lowStock: {
         label: 'Low Stock',
@@ -41,13 +39,13 @@ const AnalyticsView = () => {
         filter: item => item.expiry && new Date(item.expiry) < new Date(),
       },
     }),
-    [cutoffDate]
+    []
   );
 
   const filteredItems = useMemo(() => {
     const metric = metrics[selectedMetric];
-    return items.filter(item => metric.filter(item));
-  }, [items, metrics, selectedMetric]);
+    return recentItems.filter(item => metric.filter(item));
+  }, [recentItems, metrics, selectedMetric]);
 
   return (
     <div className="space-y-6">
@@ -65,7 +63,7 @@ const AnalyticsView = () => {
             >
               <Icon className="h-5 w-5 mr-2" />
               <span>{metric.label}</span>
-              <span className="ml-2 text-sm text-gray-500">{items.filter(metric.filter).length}</span>
+              <span className="ml-2 text-sm text-gray-500">{recentItems.filter(metric.filter).length}</span>
             </button>
           );
         })}

@@ -321,31 +321,39 @@ class PIT_Enhanced_REST {
 
     // Get analytics data
     public function get_analytics($request) {
-        $items = get_posts([
-            'post_type' => 'pit_item',
+        $range   = absint($request->get_param('range')) ?: 30;
+        $cutoff  = strtotime("-{$range} days");
+        $items   = get_posts([
+            'post_type'      => 'pit_item',
             'posts_per_page' => -1,
-            'post_status' => 'publish'
+            'post_status'    => 'publish',
         ]);
 
         $analytics = [
-            'total_items' => count($items),
-            'total_quantity' => 0,
-            'low_stock_count' => 0,
+            'items'            => [],
+            'purchase_trends'  => [],
+            'total_items'      => count($items),
+            'total_quantity'   => 0,
+            'low_stock_count'  => 0,
             'out_of_stock_count' => 0,
-            'categories' => [],
-            'stock_levels' => [
+            'categories'       => [],
+            'stock_levels'     => [
                 'out_of_stock' => 0,
-                'low_stock' => 0,
+                'low_stock'    => 0,
                 'medium_stock' => 0,
-                'high_stock' => 0
+                'high_stock'   => 0,
             ],
             'recent_purchases' => [],
-            'top_categories' => []
+            'top_categories'   => [],
         ];
+
+        $trends = [];
 
         foreach ($items as $item) {
             $qty = absint(get_post_meta($item->ID, 'pit_qty', true));
             $analytics['total_quantity'] += $qty;
+
+            $analytics['items'][] = $this->prepare_item($item);
 
             // Stock level categorization
             if ($qty === 0) {
@@ -371,17 +379,30 @@ class PIT_Enhanced_REST {
             }
 
             // Recent purchases
-            $purchased = get_post_meta($item->ID, 'pit_purchased', true);
-            $last_purchased = get_post_meta($item->ID, 'pit_last_purchased', true);
-            
-            if ($purchased && $last_purchased) {
+            $purchased       = get_post_meta($item->ID, 'pit_purchased', true);
+            $last_purchased  = get_post_meta($item->ID, 'pit_last_purchased', true);
+
+            if ($purchased && $last_purchased && strtotime($last_purchased) >= $cutoff) {
                 $analytics['recent_purchases'][] = [
-                    'id' => $item->ID,
-                    'title' => $item->post_title,
-                    'date' => $last_purchased,
-                    'quantity' => $qty
+                    'id'       => $item->ID,
+                    'title'    => $item->post_title,
+                    'date'     => $last_purchased,
+                    'quantity' => $qty,
                 ];
+
+                $date_key = date('Y-m-d', strtotime($last_purchased));
+                if (!isset($trends[$date_key])) {
+                    $trends[$date_key] = 0;
+                }
+                $trends[$date_key] += $qty;
             }
+        }
+
+        foreach ($trends as $date => $quantity) {
+            $analytics['purchase_trends'][] = [
+                'date'     => $date,
+                'quantity' => $quantity,
+            ];
         }
 
         // Sort recent purchases by date
