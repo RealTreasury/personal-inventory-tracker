@@ -928,87 +928,177 @@ add_action('admin_enqueue_scripts', function($hook) {
 });
 
 // Add settings page for enhanced options
-add_action('admin_menu', function() {
+add_action( 'admin_init', 'pit_register_enhanced_settings' );
+add_action( 'admin_menu', function() {
     add_submenu_page(
         'pit_dashboard',
-        __('Enhanced Settings', 'personal-inventory-tracker'),
-        __('Enhanced Settings', 'personal-inventory-tracker'),
+        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
+        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
         'manage_inventory_settings',
         'pit_enhanced_settings',
         'pit_enhanced_settings_page'
     );
-});
+} );
 
 function pit_enhanced_settings_page() {
-    if ( isset( $_POST['submit'] ) ) {
-        check_admin_referer( 'pit_enhanced_settings', 'pit_nonce' );
-
-        if ( current_user_can( 'manage_inventory_settings' ) ) {
-            $public_access  = isset( $_POST['public_access'] ) ? boolval( wp_unslash( $_POST['public_access'] ) ) : false;
-            $read_only_mode = isset( $_POST['read_only_mode'] ) ? boolval( wp_unslash( $_POST['read_only_mode'] ) ) : false;
-            $ocr_confidence = isset( $_POST['ocr_confidence'] ) ? absint( wp_unslash( $_POST['ocr_confidence'] ) ) : 60;
-            $currency       = isset( $_POST['currency'] ) ? sanitize_text_field( wp_unslash( $_POST['currency'] ) ) : '$';
-
-            update_option( 'pit_public_access', $public_access );
-            update_option( 'pit_read_only_mode', $read_only_mode );
-            update_option( 'pit_ocr_confidence', $ocr_confidence );
-            update_option( 'pit_currency', $currency );
-
-            echo '<div class="notice notice-success"><p>' . __( 'Settings saved!', 'personal-inventory-tracker' ) . '</p></div>';
-        } else {
-            echo '<div class="notice notice-error"><p>' . __( 'You do not have permission to save these settings.', 'personal-inventory-tracker' ) . '</p></div>';
-        }
+    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
+        return;
     }
-
-    $public_access  = get_option( 'pit_public_access', false );
-    $read_only_mode = get_option( 'pit_read_only_mode', false );
-    $ocr_confidence = get_option( 'pit_ocr_confidence', 60 );
-    $currency       = get_option( 'pit_currency', '$' );
     ?>
     <div class="wrap">
-        <h1><?php _e('Enhanced Settings', 'personal-inventory-tracker'); ?></h1>
-        <form method="post">
-            <?php wp_nonce_field( 'pit_enhanced_settings', 'pit_nonce' ); ?>
-            <table class="form-table">
-                <tr>
-                    <th><?php _e('Public Access', 'personal-inventory-tracker'); ?></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="public_access" value="1" <?php checked($public_access); ?>>
-                            <?php _e('Allow non-logged-in users to view inventory', 'personal-inventory-tracker'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php _e('Read-Only Mode', 'personal-inventory-tracker'); ?></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" name="read_only_mode" value="1" <?php checked($read_only_mode); ?>>
-                            <?php _e('Disable editing for all users', 'personal-inventory-tracker'); ?>
-                        </label>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php _e('OCR Confidence', 'personal-inventory-tracker'); ?></th>
-                    <td>
-                        <input type="range" name="ocr_confidence" min="30" max="95" value="<?php echo $ocr_confidence; ?>" class="regular-text">
-                        <span id="confidence-value"><?php echo $ocr_confidence; ?>%</span>
-                        <script>
-                        document.querySelector('input[name="ocr_confidence"]').addEventListener('input', function() {
-                            document.getElementById('confidence-value').textContent = this.value + '%';
-                        });
-                        </script>
-                    </td>
-                </tr>
-                <tr>
-                    <th><?php _e('Currency Symbol', 'personal-inventory-tracker'); ?></th>
-                    <td>
-                        <input type="text" name="currency" value="<?php echo esc_attr($currency); ?>" class="regular-text">
-                    </td>
-                </tr>
-            </table>
-            <?php submit_button(); ?>
+        <h1><?php esc_html_e( 'Enhanced Settings', 'personal-inventory-tracker' ); ?></h1>
+        <form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
+            <?php
+            settings_fields( 'pit_enhanced_settings' );
+            do_settings_sections( 'pit_enhanced_settings' );
+            submit_button();
+            ?>
         </form>
     </div>
     <?php
+}
+
+function pit_register_enhanced_settings() {
+    register_setting(
+        'pit_enhanced_settings',
+        'pit_public_access',
+        array(
+            'type'              => 'boolean',
+            'sanitize_callback' => 'pit_sanitize_public_access',
+            'default'           => false,
+        )
+    );
+
+    register_setting(
+        'pit_enhanced_settings',
+        'pit_read_only_mode',
+        array(
+            'type'              => 'boolean',
+            'sanitize_callback' => 'pit_sanitize_read_only_mode',
+            'default'           => false,
+        )
+    );
+
+    register_setting(
+        'pit_enhanced_settings',
+        'pit_ocr_confidence',
+        array(
+            'type'              => 'integer',
+            'sanitize_callback' => 'pit_sanitize_ocr_confidence',
+            'default'           => 60,
+        )
+    );
+
+    register_setting(
+        'pit_enhanced_settings',
+        'pit_currency',
+        array(
+            'type'              => 'string',
+            'sanitize_callback' => 'pit_sanitize_currency',
+            'default'           => '$',
+        )
+    );
+
+    add_settings_section(
+        'pit_enhanced_main',
+        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
+        '__return_null',
+        'pit_enhanced_settings'
+    );
+
+    add_settings_field(
+        'pit_public_access',
+        __( 'Public Access', 'personal-inventory-tracker' ),
+        'pit_field_public_access',
+        'pit_enhanced_settings',
+        'pit_enhanced_main'
+    );
+
+    add_settings_field(
+        'pit_read_only_mode',
+        __( 'Read-Only Mode', 'personal-inventory-tracker' ),
+        'pit_field_read_only_mode',
+        'pit_enhanced_settings',
+        'pit_enhanced_main'
+    );
+
+    add_settings_field(
+        'pit_ocr_confidence',
+        __( 'OCR Confidence', 'personal-inventory-tracker' ),
+        'pit_field_ocr_confidence',
+        'pit_enhanced_settings',
+        'pit_enhanced_main'
+    );
+
+    add_settings_field(
+        'pit_currency',
+        __( 'Currency Symbol', 'personal-inventory-tracker' ),
+        'pit_field_currency',
+        'pit_enhanced_settings',
+        'pit_enhanced_main'
+    );
+}
+
+function pit_field_public_access() {
+    $value = get_option( 'pit_public_access', false );
+    printf(
+        '<label><input type="checkbox" name="pit_public_access" value="1" %s /> %s</label>',
+        checked( $value, 1, false ),
+        esc_html__( 'Allow non-logged-in users to view inventory', 'personal-inventory-tracker' )
+    );
+}
+
+function pit_field_read_only_mode() {
+    $value = get_option( 'pit_read_only_mode', false );
+    printf(
+        '<label><input type="checkbox" name="pit_read_only_mode" value="1" %s /> %s</label>',
+        checked( $value, 1, false ),
+        esc_html__( 'Disable editing for all users', 'personal-inventory-tracker' )
+    );
+}
+
+function pit_field_ocr_confidence() {
+    $value = get_option( 'pit_ocr_confidence', 60 );
+    printf(
+        '<input type="range" name="pit_ocr_confidence" min="30" max="95" value="%1$d" class="regular-text" oninput="document.getElementById(\'pit-ocr-confidence-value\').textContent = this.value + \'%\';" /> <span id="pit-ocr-confidence-value">%1$d%%</span>',
+        intval( $value )
+    );
+}
+
+function pit_field_currency() {
+    $value = get_option( 'pit_currency', '$' );
+    printf(
+        '<input type="text" name="pit_currency" value="%s" class="regular-text" />',
+        esc_attr( $value )
+    );
+}
+
+function pit_sanitize_public_access( $value ) {
+    return current_user_can( 'manage_inventory_settings' ) ? ( $value ? 1 : 0 ) : get_option( 'pit_public_access', false );
+}
+
+function pit_sanitize_read_only_mode( $value ) {
+    return current_user_can( 'manage_inventory_settings' ) ? ( $value ? 1 : 0 ) : get_option( 'pit_read_only_mode', false );
+}
+
+function pit_sanitize_ocr_confidence( $value ) {
+    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
+        return get_option( 'pit_ocr_confidence', 60 );
+    }
+    $value = absint( $value );
+    if ( $value < 30 ) {
+        $value = 30;
+    }
+    if ( $value > 95 ) {
+        $value = 95;
+    }
+    return $value;
+}
+
+function pit_sanitize_currency( $value ) {
+    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
+        return get_option( 'pit_currency', '$' );
+    }
+    $value = sanitize_text_field( $value );
+    return '' === $value ? '$' : $value;
 }
