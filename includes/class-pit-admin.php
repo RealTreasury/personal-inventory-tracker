@@ -17,7 +17,7 @@ class PIT_Admin {
     }
 
     public function register_menu() {
-        $cap = 'manage_options';
+        $cap = 'manage_inventory_items';
         add_menu_page( __( 'Inventory (PIT)', 'personal-inventory-tracker' ), __( 'Inventory (PIT)', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ), 'dashicons-archive', 26 );
         add_submenu_page( 'pit_dashboard', __( 'Dashboard', 'personal-inventory-tracker' ), __( 'Dashboard', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Items', 'personal-inventory-tracker' ), __( 'Items', 'personal-inventory-tracker' ), $cap, 'pit_items', array( $this, 'items_page' ) );
@@ -29,8 +29,12 @@ class PIT_Admin {
     }
 
     public function dashboard_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Inventory Dashboard', 'personal-inventory-tracker' ) . '</h1>';
@@ -42,8 +46,12 @@ class PIT_Admin {
     }
 
     public function items_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         require_once PIT_PLUGIN_DIR . 'includes/class-pit-list-table.php';
@@ -116,8 +124,12 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function add_item_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         $item_id = isset( $_GET['item_id'] ) ? absint( $_GET['item_id'] ) : 0;
@@ -125,7 +137,7 @@ document.addEventListener('DOMContentLoaded',function(){
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Add/Edit Item', 'personal-inventory-tracker' ) . '</h1>';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-        wp_nonce_field( 'pit_save_item' );
+        wp_nonce_field( 'pit_save_item', 'pit_nonce' );
         echo '<input type="hidden" name="action" value="pit_save_item" />';
         echo '<input type="hidden" name="item_id" value="' . esc_attr( $item_id ) . '" />';
         echo '<table class="form-table"><tbody>';
@@ -184,13 +196,24 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function save_item() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to perform this action.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
-        check_admin_referer( 'pit_save_item' );
+        check_admin_referer( 'pit_save_item', 'pit_nonce' );
 
         $item_id = isset( $_POST['item_id'] ) ? absint( $_POST['item_id'] ) : 0;
         $title   = isset( $_POST['pit_item_name'] ) ? sanitize_text_field( wp_unslash( $_POST['pit_item_name'] ) ) : '';
+        if ( '' === $title ) {
+            wp_die(
+                esc_html__( 'Item name is required.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 400 )
+            );
+        }
 
         $post_data = array(
             'post_title'  => $title,
@@ -225,11 +248,15 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function quick_adjust() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to perform this action.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
         $item_id = isset( $_GET['item_id'] ) ? absint( $_GET['item_id'] ) : 0;
-        check_admin_referer( 'pit_quick_adjust_' . $item_id );
+        check_admin_referer( 'pit_quick_adjust_' . $item_id, 'pit_nonce' );
         $qty = (int) get_post_meta( $item_id, 'pit_qty', true );
         update_post_meta( $item_id, 'pit_qty', $qty + 1 );
         wp_safe_redirect( add_query_arg( 'pit_message', 'adjusted', admin_url( 'admin.php?page=pit_items' ) ) );
@@ -237,19 +264,27 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function mark_purchased() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to perform this action.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
         $item_id = isset( $_GET['item_id'] ) ? absint( $_GET['item_id'] ) : 0;
-        check_admin_referer( 'pit_mark_purchased_' . $item_id );
+        check_admin_referer( 'pit_mark_purchased_' . $item_id, 'pit_nonce' );
         update_post_meta( $item_id, 'pit_last_purchased', current_time( 'Y-m-d' ) );
         wp_safe_redirect( add_query_arg( 'pit_message', 'purchased', admin_url( 'admin.php?page=pit_items' ) ) );
         exit;
     }
 
     public function import_export_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Import/Export', 'personal-inventory-tracker' ) . '</h1>';
@@ -261,14 +296,18 @@ document.addEventListener('DOMContentLoaded',function(){
             'restUrl'      => esc_url_raw( rest_url( 'pit/v1/' ) ),
             'nonce'        => wp_create_nonce( 'wp_rest' ),
             'capabilities' => array(
-                'import' => current_user_can( 'manage_options' ),
-                'export' => current_user_can( 'manage_options' ),
+                  'import' => current_user_can( 'manage_inventory_items' ),
+                  'export' => current_user_can( 'manage_inventory_items' ),
             ),
         ) );
     }
     public function shopping_list_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Shopping List', 'personal-inventory-tracker' ) . '</h1>';
@@ -286,8 +325,12 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function analytics_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Analytics', 'personal-inventory-tracker' ) . '</h1>';
@@ -301,8 +344,12 @@ document.addEventListener('DOMContentLoaded',function(){
         ) );
     }
     public function ocr_receipt_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            return;
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
 
         $items       = get_posts(
@@ -339,10 +386,14 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function ocr_update() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            wp_die(
+                esc_html__( 'You do not have permission to perform this action.', 'personal-inventory-tracker' ),
+                '',
+                array( 'response' => 403 )
+            );
         }
-        check_admin_referer( 'pit_ocr_update' );
+        check_admin_referer( 'pit_ocr_update', 'pit_nonce' );
 
         $updates = isset( $_POST['pit_ocr_updates'] ) ? json_decode( wp_unslash( $_POST['pit_ocr_updates'] ), true ) : array();
         if ( is_array( $updates ) ) {
@@ -381,16 +432,20 @@ document.addEventListener('DOMContentLoaded',function(){
         if ( get_option( 'pit_intro_dismissed' ) ) {
             return;
         }
-        $dismiss_url = wp_nonce_url( add_query_arg( 'pit_dismiss_intro', 1 ), 'pit_dismiss_intro' );
+        $dismiss_url = wp_nonce_url( add_query_arg( 'pit_dismiss_intro', 1 ), 'pit_dismiss_intro', 'pit_nonce' );
         echo '<div class="notice notice-info is-dismissible"><p>' . esc_html__( 'Welcome to Personal Inventory Tracker!', 'personal-inventory-tracker' ) . '</p><p><a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'personal-inventory-tracker' ) . '</a></p></div>';
     }
 
     public function maybe_dismiss_intro() {
         if ( isset( $_GET['pit_dismiss_intro'] ) ) {
-            if ( ! current_user_can( 'manage_options' ) ) {
-                return;
+            if ( ! current_user_can( 'manage_inventory_items' ) ) {
+                wp_die(
+                    esc_html__( 'You do not have permission to perform this action.', 'personal-inventory-tracker' ),
+                    '',
+                    array( 'response' => 403 )
+                );
             }
-            check_admin_referer( 'pit_dismiss_intro' );
+            check_admin_referer( 'pit_dismiss_intro', 'pit_nonce' );
             update_option( 'pit_intro_dismissed', 1 );
         }
     }
