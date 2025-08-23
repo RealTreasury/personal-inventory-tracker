@@ -30,13 +30,15 @@ class PIT_Cache {
      * @return mixed Cached value.
      */
     public static function get_or_set( string $key, callable $callback, int $expiration = HOUR_IN_SECONDS ) {
-        $value = get_transient( $key );
-        if ( false === $value ) {
+        $cached = get_transient( $key );
+
+        if ( ! is_array( $cached ) || ! array_key_exists( 'value', $cached ) ) {
             $value = call_user_func( $callback );
-            set_transient( $key, $value, $expiration );
+            set_transient( $key, array( 'value' => $value ), $expiration );
+            return $value;
         }
 
-        return $value;
+        return $cached['value'];
     }
 
     /**
