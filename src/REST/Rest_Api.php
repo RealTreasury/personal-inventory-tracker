@@ -51,6 +51,12 @@ class Rest_Api {
                 'purchased' => array(
                     'type' => 'boolean',
                 ),
+                'notes'     => array(
+                    'type' => 'string',
+                ),
+                'category'  => array(
+                    'type' => 'string',
+                ),
             ),
         );
     }
@@ -89,6 +95,16 @@ class Rest_Api {
                             'sanitize_callback' => 'rest_sanitize_boolean',
                             'validate_callback' => 'rest_validate_request_arg',
                         ),
+                        'notes' => array(
+                            'type'              => 'string',
+                            'sanitize_callback' => 'sanitize_textarea_field',
+                            'validate_callback' => 'rest_validate_request_arg',
+                        ),
+                        'category' => array(
+                            'type'              => 'string',
+                            'sanitize_callback' => 'sanitize_title',
+                            'validate_callback' => 'rest_validate_request_arg',
+                        ),
                     ),
                     'schema'              => array( $this, 'get_item_schema' ),
                 ),
@@ -123,6 +139,16 @@ class Rest_Api {
                         'purchased' => array(
                             'type'              => 'boolean',
                             'sanitize_callback' => 'rest_sanitize_boolean',
+                            'validate_callback' => 'rest_validate_request_arg',
+                        ),
+                        'notes' => array(
+                            'type'              => 'string',
+                            'sanitize_callback' => 'sanitize_textarea_field',
+                            'validate_callback' => 'rest_validate_request_arg',
+                        ),
+                        'category' => array(
+                            'type'              => 'string',
+                            'sanitize_callback' => 'sanitize_title',
                             'validate_callback' => 'rest_validate_request_arg',
                         ),
                     ),
@@ -306,6 +332,29 @@ class Rest_Api {
 
         update_post_meta( $id, 'qty', (int) $request['qty'] );
         update_post_meta( $id, 'purchased', ! empty( $request['purchased'] ) );
+        if ( isset( $request['notes'] ) ) {
+            update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $request['notes'] ) );
+        }
+
+        $category = isset( $request['category'] ) ? sanitize_title( $request['category'] ) : '';
+        if ( ! $category ) {
+            $settings = \RealTreasury\Inventory\Settings::get_settings();
+            if ( ! empty( $settings['auto_categorize'] ) ) {
+                $notes    = isset( $request['notes'] ) ? $request['notes'] : '';
+                $category = \RealTreasury\Inventory\Services\CategoryClassifier::suggest_category( $request['title'], $notes );
+            }
+        }
+        if ( $category ) {
+            $term = get_term_by( 'slug', $category, 'pit_category' );
+            if ( ! $term ) {
+                $term = wp_insert_term( $category, 'pit_category', array( 'slug' => $category ) );
+            }
+            if ( ! is_wp_error( $term ) ) {
+                $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
+                wp_set_post_terms( $id, array( $term_id ), 'pit_category', false );
+                do_action( 'pit_category_auto_assigned', $id, $category );
+            }
+        }
 
         return rest_ensure_response( $this->prepare_item( get_post( $id ) ) );
     }
@@ -496,6 +545,31 @@ class Rest_Api {
 
         if ( isset( $request['purchased'] ) ) {
             update_post_meta( $id, 'purchased', ! empty( $request['purchased'] ) );
+        }
+
+        if ( isset( $request['notes'] ) ) {
+            update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $request['notes'] ) );
+        }
+
+        $category = isset( $request['category'] ) ? sanitize_title( $request['category'] ) : '';
+        if ( ! $category ) {
+            $settings = \RealTreasury\Inventory\Settings::get_settings();
+            if ( ! empty( $settings['auto_categorize'] ) ) {
+                $title    = isset( $request['title'] ) ? $request['title'] : get_the_title( $id );
+                $notes    = isset( $request['notes'] ) ? $request['notes'] : get_post_meta( $id, 'pit_notes', true );
+                $category = \RealTreasury\Inventory\Services\CategoryClassifier::suggest_category( $title, $notes );
+            }
+        }
+        if ( $category ) {
+            $term = get_term_by( 'slug', $category, 'pit_category' );
+            if ( ! $term ) {
+                $term = wp_insert_term( $category, 'pit_category', array( 'slug' => $category ) );
+            }
+            if ( ! is_wp_error( $term ) ) {
+                $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
+                wp_set_post_terms( $id, array( $term_id ), 'pit_category', false );
+                do_action( 'pit_category_auto_assigned', $id, $category );
+            }
         }
 
         return rest_ensure_response( $this->prepare_item( get_post( $id ) ) );

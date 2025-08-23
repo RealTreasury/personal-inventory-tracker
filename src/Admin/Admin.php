@@ -19,6 +19,7 @@ class Admin {
         add_action( 'admin_notices', array( $this, 'maybe_show_notices' ) );
         add_action( 'admin_notices', array( $this, 'intro_notice' ) );
         add_action( 'admin_init', array( $this, 'maybe_dismiss_intro' ) );
+        add_action( 'pit_category_auto_assigned', array( $this, 'store_auto_category_notice' ), 10, 2 );
     }
 
     public function register_menu() {
@@ -416,6 +417,14 @@ document.addEventListener('DOMContentLoaded',function(){
     }
 
     public function maybe_show_notices() {
+        $notices = get_option( 'pit_auto_category_notices', array() );
+        if ( $notices ) {
+            foreach ( $notices as $note ) {
+                printf( '<div class="notice notice-info is-dismissible"><p>%s</p></div>', esc_html( $note ) );
+            }
+            delete_option( 'pit_auto_category_notices' );
+        }
+
         if ( empty( $_GET['pit_message'] ) ) {
             return;
         }
@@ -430,6 +439,19 @@ document.addEventListener('DOMContentLoaded',function(){
         if ( isset( $messages[ $message ] ) ) {
             printf( '<div class="notice notice-success is-dismissible"><p>%s</p></div>', esc_html( $messages[ $message ] ) );
         }
+    }
+
+    public function store_auto_category_notice( $item_id, $slug ) {
+        $message = sprintf(
+            /* translators: 1: item title, 2: category slug */
+            __( 'Item "%1$s" auto-assigned to category "%2$s".', 'personal-inventory-tracker' ),
+            get_the_title( $item_id ),
+            $slug
+        );
+        error_log( $message );
+        $notices   = get_option( 'pit_auto_category_notices', array() );
+        $notices[] = $message;
+        update_option( 'pit_auto_category_notices', $notices );
     }
 
     public function intro_notice() {

@@ -69,6 +69,18 @@ class Inventory_Command extends WP_CLI_Command {
         Import_Export::import_from_csv_string( $rows, $mapping );
         WP_CLI::success( 'Inventory imported.' );
     }
+
+    /**
+     * Classify uncategorized items using GPT.
+     *
+     * ## EXAMPLES
+     *
+     *     wp pit inventory classify
+     */
+    public function classify( $args, $assoc_args ) {
+        $count = Import_Export::classify_uncategorized();
+        WP_CLI::success( sprintf( 'Classified %d items.', $count ) );
+    }
 }
 
 \class_alias( __NAMESPACE__ . '\\Inventory_Command', 'PIT\\CLI\\Inventory_Command' );
