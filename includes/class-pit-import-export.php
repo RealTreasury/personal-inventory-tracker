@@ -139,7 +139,7 @@ class PIT_Import_Export {
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => array( __CLASS__, 'rest_export' ),
                 'permission_callback' => function() {
-                    return current_user_can( 'manage_options' );
+                    return current_user_can( 'manage_inventory_items' );
                 },
             )
         );
@@ -150,7 +150,7 @@ class PIT_Import_Export {
                 'methods'             => WP_REST_Server::CREATABLE,
                 'callback'            => array( __CLASS__, 'rest_import' ),
                 'permission_callback' => function() {
-                    return current_user_can( 'manage_options' );
+                    return current_user_can( 'manage_inventory_items' );
                 },
             )
         );

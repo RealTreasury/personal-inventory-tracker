@@ -88,14 +88,14 @@ class PIT_Settings {
             'pit_dashboard',
             __( 'Settings', 'personal-inventory-tracker' ),
             __( 'Settings', 'personal-inventory-tracker' ),
-            'manage_options',
+            'manage_inventory_settings',
             'pit_settings',
             array( __CLASS__, 'render_page' )
         );
     }
 
     public static function render_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_inventory_settings' ) ) {
             return;
         }
         echo '<div class="wrap">';
@@ -156,7 +156,7 @@ class PIT_Settings {
     }
 
     public static function sanitize( $input ) {
-        if ( ! current_user_can( 'manage_options' ) ) {
+        if ( ! current_user_can( 'manage_inventory_settings' ) ) {
             return self::get_settings();
         }
 
