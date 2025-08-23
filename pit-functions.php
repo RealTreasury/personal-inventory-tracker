@@ -158,12 +158,12 @@ function pit_esc_html( $text ) {
  * @param int $post_id Post ID.
  * @return void
  */
-function pit_clear_summary_cache( $post_id ) {
+function pit_clear_inventory_caches( $post_id ) {
     if ( 'pit_item' === get_post_type( $post_id ) ) {
-        \RealTreasury\Inventory\Cache::delete( 'pit_reco_summary' );
+        PIT_Cache::clear_inventory_caches();
     }
 }
 
-add_action( 'save_post_pit_item', 'pit_clear_summary_cache' );
-add_action( 'delete_post', 'pit_clear_summary_cache' );
+add_action( 'save_post_pit_item', 'pit_clear_inventory_caches' );
+add_action( 'delete_post', 'pit_clear_inventory_caches' );
 

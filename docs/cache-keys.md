@@ -2,6 +2,8 @@
 
 This document lists transient cache keys used by Personal Inventory Tracker and their purposes. Follow these patterns when adding new caches to ensure consistent invalidation.
 
+Unless otherwise noted, caches created with `PIT_Cache::get_or_set()` expire after **1 hour**. Keys should use the `pit_` prefix followed by the feature name and description.
+
 ## Summary reports
 - **Key:** `pit_reco_summary`
 - **Purpose:** Stores dashboard summary totals and recent purchase data.

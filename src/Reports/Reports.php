@@ -18,7 +18,7 @@ class Reports {
      * @return array
      */
     public function get_summary() {
-        return \RealTreasury\Inventory\Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
+        return \PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
     }
 
     /**

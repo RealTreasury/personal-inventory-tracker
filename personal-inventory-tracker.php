@@ -21,6 +21,7 @@ define( 'PIT_VERSION', '2.0.0' );
 // Autoloader
 require_once PIT_PLUGIN_DIR . 'vendor/autoload.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
 
 // Enhanced REST API Class
 class PIT_Enhanced_REST {
@@ -332,148 +333,173 @@ class PIT_Enhanced_REST {
     }
 
     // Get analytics data
-    public function get_analytics($request) {
-        $range   = absint($request->get_param('range')) ?: 30;
-        $cutoff  = strtotime("-{$range} days");
-        $items   = get_posts([
-            'post_type'      => 'pit_item',
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-        ]);
+    public function get_analytics( $request ) {
+        $range     = absint( $request->get_param( 'range' ) ) ?: 30;
+        $cache_key = 'pit_analytics_' . $range;
 
-        $analytics = [
-            'items'            => [],
-            'purchase_trends'  => [],
-            'total_items'      => count($items),
-            'total_quantity'   => 0,
-            'low_stock_count'  => 0,
-            'out_of_stock_count' => 0,
-            'categories'       => [],
-            'stock_levels'     => [
-                'out_of_stock' => 0,
-                'low_stock'    => 0,
-                'medium_stock' => 0,
-                'high_stock'   => 0,
-            ],
-            'recent_purchases' => [],
-            'top_categories'   => [],
-        ];
+        $analytics = PIT_Cache::get_or_set(
+            $cache_key,
+            function() use ( $range ) {
+                $cutoff = strtotime( '-' . $range . ' days' );
+                $items  = get_posts(
+                    [
+                        'post_type'      => 'pit_item',
+                        'posts_per_page' => -1,
+                        'post_status'    => 'publish',
+                    ]
+                );
 
-        $trends = [];
-
-        foreach ($items as $item) {
-            $qty = absint(get_post_meta($item->ID, 'pit_qty', true));
-            $analytics['total_quantity'] += $qty;
-
-            $analytics['items'][] = $this->prepare_item($item);
-
-            // Stock level categorization
-            if ($qty === 0) {
-                $analytics['out_of_stock_count']++;
-                $analytics['stock_levels']['out_of_stock']++;
-            } elseif ($qty <= 5) {
-                $analytics['low_stock_count']++;
-                $analytics['stock_levels']['low_stock']++;
-            } elseif ($qty <= 20) {
-                $analytics['stock_levels']['medium_stock']++;
-            } else {
-                $analytics['stock_levels']['high_stock']++;
-            }
-
-            // Category breakdown
-            $categories = wp_get_post_terms($item->ID, 'pit_category', ['fields' => 'names']);
-            foreach ($categories as $category) {
-                if (!isset($analytics['categories'][$category])) {
-                    $analytics['categories'][$category] = ['count' => 0, 'quantity' => 0];
-                }
-                $analytics['categories'][$category]['count']++;
-                $analytics['categories'][$category]['quantity'] += $qty;
-            }
-
-            // Recent purchases
-            $purchased       = get_post_meta($item->ID, 'pit_purchased', true);
-            $last_purchased  = get_post_meta($item->ID, 'pit_last_purchased', true);
-
-            if ($purchased && $last_purchased && strtotime($last_purchased) >= $cutoff) {
-                $analytics['recent_purchases'][] = [
-                    'id'       => $item->ID,
-                    'title'    => $item->post_title,
-                    'date'     => $last_purchased,
-                    'quantity' => $qty,
+                $analytics = [
+                    'items'             => [],
+                    'purchase_trends'   => [],
+                    'total_items'       => count( $items ),
+                    'total_quantity'    => 0,
+                    'low_stock_count'   => 0,
+                    'out_of_stock_count'=> 0,
+                    'categories'        => [],
+                    'stock_levels'      => [
+                        'out_of_stock' => 0,
+                        'low_stock'    => 0,
+                        'medium_stock' => 0,
+                        'high_stock'   => 0,
+                    ],
+                    'recent_purchases'  => [],
+                    'top_categories'    => [],
                 ];
 
-                $date_key = date('Y-m-d', strtotime($last_purchased));
-                if (!isset($trends[$date_key])) {
-                    $trends[$date_key] = 0;
+                $trends = [];
+
+                foreach ( $items as $item ) {
+                    $qty                          = absint( get_post_meta( $item->ID, 'pit_qty', true ) );
+                    $analytics['total_quantity']  += $qty;
+                    $analytics['items'][]         = $this->prepare_item( $item );
+
+                    // Stock level categorization.
+                    if ( 0 === $qty ) {
+                        $analytics['out_of_stock_count']++;
+                        $analytics['stock_levels']['out_of_stock']++;
+                    } elseif ( $qty <= 5 ) {
+                        $analytics['low_stock_count']++;
+                        $analytics['stock_levels']['low_stock']++;
+                    } elseif ( $qty <= 20 ) {
+                        $analytics['stock_levels']['medium_stock']++;
+                    } else {
+                        $analytics['stock_levels']['high_stock']++;
+                    }
+
+                    // Category breakdown.
+                    $categories = wp_get_post_terms( $item->ID, 'pit_category', [ 'fields' => 'names' ] );
+                    foreach ( $categories as $category ) {
+                        if ( ! isset( $analytics['categories'][ $category ] ) ) {
+                            $analytics['categories'][ $category ] = [ 'count' => 0, 'quantity' => 0 ];
+                        }
+                        $analytics['categories'][ $category ]['count']++;
+                        $analytics['categories'][ $category ]['quantity'] += $qty;
+                    }
+
+                    // Recent purchases.
+                    $purchased      = get_post_meta( $item->ID, 'pit_purchased', true );
+                    $last_purchased = get_post_meta( $item->ID, 'pit_last_purchased', true );
+
+                    if ( $purchased && $last_purchased && strtotime( $last_purchased ) >= $cutoff ) {
+                        $analytics['recent_purchases'][] = [
+                            'id'       => $item->ID,
+                            'title'    => $item->post_title,
+                            'date'     => $last_purchased,
+                            'quantity' => $qty,
+                        ];
+
+                        $date_key = date( 'Y-m-d', strtotime( $last_purchased ) );
+                        if ( ! isset( $trends[ $date_key ] ) ) {
+                            $trends[ $date_key ] = 0;
+                        }
+                        $trends[ $date_key ] += $qty;
+                    }
                 }
-                $trends[$date_key] += $qty;
+
+                foreach ( $trends as $date => $quantity ) {
+                    $analytics['purchase_trends'][] = [
+                        'date'     => $date,
+                        'quantity' => $quantity,
+                    ];
+                }
+
+                // Sort recent purchases by date.
+                usort(
+                    $analytics['recent_purchases'],
+                    function( $a, $b ) {
+                        return strtotime( $b['date'] ) - strtotime( $a['date'] );
+                    }
+                );
+                $analytics['recent_purchases'] = array_slice( $analytics['recent_purchases'], 0, 10 );
+
+                // Top categories.
+                arsort( $analytics['categories'] );
+                $analytics['top_categories'] = array_slice( $analytics['categories'], 0, 5, true );
+
+                return $analytics;
             }
-        }
+        );
 
-        foreach ($trends as $date => $quantity) {
-            $analytics['purchase_trends'][] = [
-                'date'     => $date,
-                'quantity' => $quantity,
-            ];
-        }
-
-        // Sort recent purchases by date
-        usort($analytics['recent_purchases'], function($a, $b) {
-            return strtotime($b['date']) - strtotime($a['date']);
-        });
-        $analytics['recent_purchases'] = array_slice($analytics['recent_purchases'], 0, 10);
-
-        // Top categories
-        arsort($analytics['categories']);
-        $analytics['top_categories'] = array_slice($analytics['categories'], 0, 5, true);
-
-        return rest_ensure_response($analytics);
+        return rest_ensure_response( $analytics );
     }
 
     // Get shopping list
-    public function get_shopping_list($request) {
-        $items = get_posts([
-            'post_type' => 'pit_item',
-            'posts_per_page' => -1,
-            'post_status' => 'publish'
-        ]);
+    public function get_shopping_list( $request ) {
+        $data = PIT_Cache::get_or_set(
+            'pit_shopping_list',
+            function() {
+                $items = get_posts(
+                    [
+                        'post_type'      => 'pit_item',
+                        'posts_per_page' => -1,
+                        'post_status'    => 'publish',
+                    ]
+                );
 
-        $shopping_list = [];
+                $shopping_list = [];
 
-        foreach ($items as $item) {
-            $qty = absint(get_post_meta($item->ID, 'pit_qty', true));
-            $threshold = absint(get_post_meta($item->ID, 'pit_threshold', true));
-            $purchased = get_post_meta($item->ID, 'pit_purchased', true);
+                foreach ( $items as $item ) {
+                    $qty       = absint( get_post_meta( $item->ID, 'pit_qty', true ) );
+                    $threshold = absint( get_post_meta( $item->ID, 'pit_threshold', true ) );
+                    $purchased = get_post_meta( $item->ID, 'pit_purchased', true );
 
-            // Add to shopping list if below threshold or marked as needed
-            if (($threshold > 0 && $qty <= $threshold) || (!$purchased && $qty === 0)) {
-                $categories = wp_get_post_terms($item->ID, 'pit_category', ['fields' => 'names']);
-                
-                $shopping_list[] = [
-                    'id' => $item->ID,
-                    'title' => $item->post_title,
-                    'current_qty' => $qty,
-                    'threshold' => $threshold,
-                    'category' => $categories ? $categories[0] : 'Uncategorized',
-                    'priority' => $qty === 0 ? 'high' : 'medium',
-                    'estimated_cost' => get_post_meta($item->ID, 'pit_estimated_cost', true) ?: 0
+                    // Add to shopping list if below threshold or marked as needed.
+                    if ( ( $threshold > 0 && $qty <= $threshold ) || ( ! $purchased && 0 === $qty ) ) {
+                        $categories = wp_get_post_terms( $item->ID, 'pit_category', [ 'fields' => 'names' ] );
+
+                        $shopping_list[] = [
+                            'id'            => $item->ID,
+                            'title'         => $item->post_title,
+                            'current_qty'   => $qty,
+                            'threshold'     => $threshold,
+                            'category'      => $categories ? $categories[0] : 'Uncategorized',
+                            'priority'      => 0 === $qty ? 'high' : 'medium',
+                            'estimated_cost'=> get_post_meta( $item->ID, 'pit_estimated_cost', true ) ?: 0,
+                        ];
+                    }
+                }
+
+                // Sort by priority and category.
+                usort(
+                    $shopping_list,
+                    function( $a, $b ) {
+                        if ( $a['priority'] !== $b['priority'] ) {
+                            return 'high' === $a['priority'] ? -1 : 1;
+                        }
+                        return strcmp( $a['category'], $b['category'] );
+                    }
+                );
+
+                return [
+                    'items'          => $shopping_list,
+                    'total_items'    => count( $shopping_list ),
+                    'estimated_total'=> array_sum( array_column( $shopping_list, 'estimated_cost' ) ),
                 ];
             }
-        }
+        );
 
-        // Sort by priority and category
-        usort($shopping_list, function($a, $b) {
-            if ($a['priority'] !== $b['priority']) {
-                return $a['priority'] === 'high' ? -1 : 1;
-            }
-            return strcmp($a['category'], $b['category']);
-        });
-
-        return rest_ensure_response([
-            'items' => $shopping_list,
-            'total_items' => count($shopping_list),
-            'estimated_total' => array_sum(array_column($shopping_list, 'estimated_cost'))
-        ]);
+        return rest_ensure_response( $data );
     }
 
     // Process OCR results
