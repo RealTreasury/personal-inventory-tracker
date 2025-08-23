@@ -2,21 +2,10 @@ let tesseractPromise;
 
 export function loadTesseract() {
   if (!tesseractPromise) {
-    tesseractPromise = (async () => {
-      try {
-        return await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
-      } catch (cdnErr) {
-        console.warn('CDN load failed, attempting local fallback.');
-        try {
-          return await import('./tesseract.esm.min.js');
-        } catch (localErr) {
-          console.error('Tesseract failed to load.', localErr);
-          throw new Error(
-            'Failed to load OCR engine. Please check your internet connection or plugin installation.'
-          );
-        }
-      }
-    })();
+    const url =
+      (typeof window !== 'undefined' && window.pitApp ? window.pitApp.assetUrl : '') +
+      'tesseract.esm.min.js';
+    tesseractPromise = import(url);
   }
   return tesseractPromise;
 }

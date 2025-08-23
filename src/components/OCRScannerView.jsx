@@ -1,15 +1,13 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Camera, Upload, X, Check, AlertCircle,
-  Loader2, Image, FileText, Zap, Settings,
-  Plus, Minus, Eye, EyeOff, RotateCw
+  Loader2, Zap, Settings, Plus
 } from 'lucide-react';
 
 const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResults, setScanResults] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
   const [confidence, setConfidence] = useState(60);
   const [processingStage, setProcessingStage] = useState('');
   const [scanSettings, setScanSettings] = useState({
@@ -74,11 +72,9 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
   // Handle file upload
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      setSelectedImage(file);
-
-      // Create preview
-      const reader = new FileReader();
+      if (file && file.type.startsWith('image/')) {
+        // Create preview
+        const reader = new FileReader();
       reader.onload = (e) => setImagePreview(e.target.result);
       reader.readAsDataURL(file);
 
@@ -94,7 +90,7 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
 
     try {
       // Import Tesseract dynamically to avoid blocking
-      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
+      const Tesseract = await import(`${window.pitApp.assetUrl}tesseract.esm.min.js`);
 
       setProcessingStage('Loading OCR engine...');
 
@@ -222,10 +218,11 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="ocr-language" className="block text-sm font-medium text-gray-700 mb-1">
                 Language
               </label>
               <select
+                id="ocr-language"
                 value={scanSettings.language}
                 onChange={(e) => setScanSettings(prev => ({ ...prev, language: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -239,10 +236,11 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="ocr-psm" className="block text-sm font-medium text-gray-700 mb-1">
                 Page Segmentation Mode
               </label>
               <select
+                id="ocr-psm"
                 value={scanSettings.psm}
                 onChange={(e) => setScanSettings(prev => ({ ...prev, psm: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -358,6 +356,7 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
             </div>
 
             <div className="relative">
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
               <video
                 ref={videoRef}
                 autoPlay
