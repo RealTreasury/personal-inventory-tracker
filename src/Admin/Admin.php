@@ -378,7 +378,10 @@ document.addEventListener('DOMContentLoaded',function(){
         include PIT_PLUGIN_DIR . 'templates/ocr-scanner.php';
         echo '</div>';
 
-        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', array(), PIT_VERSION, true );
+        wp_enqueue_script( 'pit-tesseract', PIT_PLUGIN_URL . 'assets/tesseract.esm.min.js', array(), PIT_VERSION, true );
+        wp_script_add_data( 'pit-tesseract', 'type', 'module' );
+
+        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', array( 'pit-tesseract' ), PIT_VERSION, true );
         wp_script_add_data( 'pit-ocr-scanner', 'type', 'module' );
         wp_localize_script(
             'pit-ocr-scanner',
@@ -387,6 +390,7 @@ document.addEventListener('DOMContentLoaded',function(){
                 'restUrl' => esc_url_raw( rest_url( 'pit/v2/' ) ),
                 'nonce'   => wp_create_nonce( 'wp_rest' ),
                 'items'   => $choices,
+                'assetUrl' => esc_url_raw( PIT_PLUGIN_URL . 'assets/' ),
             )
         );
     }
