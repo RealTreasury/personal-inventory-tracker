@@ -864,8 +864,6 @@ function pit_activate() {
     add_option('pit_currency', '$');
     add_option('pit_version', PIT_VERSION);
 
-    \RealTreasury\Inventory\Database::migrate();
-
     flush_rewrite_rules();
 }
 
@@ -880,6 +878,8 @@ function pit_deactivate() {
 // Register hooks
 register_activation_hook(PIT_PLUGIN_FILE, 'pit_activate');
 register_deactivation_hook(PIT_PLUGIN_FILE, 'pit_deactivate');
+register_activation_hook(PIT_PLUGIN_FILE, array( \RealTreasury\Inventory\Database::class, 'migrate' ) );
+register_deactivation_hook(PIT_PLUGIN_FILE, array( \RealTreasury\Inventory\Database::class, 'rollback' ) );
 
 // Initialize
 add_action('init', [\RealTreasury\Inventory\CPT::class, 'register']);
