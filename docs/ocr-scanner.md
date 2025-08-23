@@ -18,3 +18,14 @@ Learn how to digitize receipt data using the plugin's OCR scanner.
 - **Crop and rotate:** Use the preview tools to crop or rotate the image before scanning.
 
 Save your settings and rerun the scan if the results are not accurate.
+
+## Shortcode usage
+
+Use the `[pit_ocr_scanner]` shortcode to add the scanner to any page:
+
+1. In the WordPress admin, go to **Pages → Add New**.
+2. Give the page a title like "Receipt OCR Test".
+3. Add `[pit_ocr_scanner]` in the content area and publish the page.
+4. Visit the page to try scanning receipts from your camera or by uploading an image.
+
+The shortcode automatically loads existing inventory items to help match scanned text.

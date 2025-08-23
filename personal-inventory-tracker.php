@@ -725,6 +725,7 @@ function pit_enqueue_enhanced_frontend() {
 
     $app_js  = PIT_PLUGIN_DIR . 'assets/app.js';
     $app_css = PIT_PLUGIN_DIR . 'assets/app.css';
+    $ocr_js  = PIT_PLUGIN_DIR . 'assets/ocr-scanner.js';
 
     $script_args = [
         'in_footer' => true,
@@ -780,8 +781,46 @@ function pit_enqueue_enhanced_frontend() {
             ],
         ] );
     }
+
+    if ( $has_ocr && file_exists( $ocr_js ) ) {
+        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', [], PIT_VERSION, $script_args );
+        wp_script_add_data( 'pit-ocr-scanner', 'type', 'module' );
+
+        $items   = get_posts(
+            [
+                'post_type'      => 'pit_item',
+                'posts_per_page' => -1,
+                'post_status'    => 'publish',
+            ]
+        );
+        $choices = [];
+
+        foreach ( $items as $item ) {
+            $choices[] = [
+                'id'    => $item->ID,
+                'title' => $item->post_title,
+            ];
+        }
+
+        wp_localize_script(
+            'pit-ocr-scanner',
+            'pitApp',
+            [
+                'restUrl' => rest_url( 'pit/v2/' ),
+                'nonce'   => wp_create_nonce( 'wp_rest' ),
+                'items'   => $choices,
+            ]
+        );
+    }
 }
 add_action( 'wp_enqueue_scripts', 'pit_enqueue_enhanced_frontend' );
+
+// OCR scanner shortcode
+function pit_ocr_scanner_shortcode() {
+    ob_start();
+    include PIT_PLUGIN_DIR . 'templates/ocr-scanner.php';
+    return ob_get_clean();
+}
 
 // Enhanced shortcode
 function pit_enhanced_shortcode( $atts = [] ) {
@@ -876,7 +915,8 @@ function pit_init_enhanced() {
     // Register shortcode
     add_shortcode('pit_enhanced', 'pit_enhanced_shortcode');
     add_shortcode('pit_dashboard', 'pit_enhanced_shortcode');
-    
+    add_shortcode('pit_ocr_scanner', 'pit_ocr_scanner_shortcode');
+
     // Backward compatibility
     add_shortcode('pit_app', 'pit_enhanced_shortcode');
 }
