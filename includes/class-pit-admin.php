@@ -14,6 +14,40 @@ class PIT_Admin {
         add_action( 'admin_notices', array( $this, 'maybe_show_notices' ) );
         add_action( 'admin_notices', array( $this, 'intro_notice' ) );
         add_action( 'admin_init', array( $this, 'maybe_dismiss_intro' ) );
+        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+    }
+
+    public function enqueue_assets( $hook ) {
+        if ( false === strpos( $hook, 'pit_' ) ) {
+            return;
+        }
+
+        wp_enqueue_style(
+            'pit-admin',
+            PIT_PLUGIN_URL . 'assets/admin.css',
+            array(),
+            filemtime( PIT_PLUGIN_DIR . 'assets/admin.css' )
+        );
+
+        wp_enqueue_script(
+            'pit-admin',
+            PIT_PLUGIN_URL . 'assets/admin.js',
+            array(),
+            filemtime( PIT_PLUGIN_DIR . 'assets/admin.js' ),
+            true
+        );
+
+        wp_localize_script(
+            'pit-admin',
+            'pitAdmin',
+            array(
+                'restUrl' => esc_url_raw( rest_url() ),
+                'nonce'   => wp_create_nonce( 'wp_rest' ),
+                'i18n'    => array(
+                    'error' => __( 'An error occurred.', 'personal-inventory-tracker' ),
+                ),
+            )
+        );
     }
 
     public function register_menu() {

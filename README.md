@@ -18,7 +18,7 @@ Personal Inventory Tracker is a WordPress plugin that helps you manage household
 
 ## Installation
 1. Upload the plugin to your site's `wp-content/plugins` directory or install via the WordPress admin.
-2. Run `npm run build` to compile front-end assets if developing locally.
+2. Run `npm install` and `npm run build` to compile front-end and admin assets via [esbuild](https://esbuild.github.io/) if developing locally.
 3. Activate the plugin through the **Plugins** menu.
 4. Configure settings under **Settings → Personal Inventory**.
 
@@ -61,7 +61,7 @@ A copy of this sample CSV is available at [`docs/sample.csv`](docs/sample.csv).
 - Use SSL and limit write mode to trusted users to protect inventory data.
 
 ## Building Assets
-Run `npm run build` to bundle the OCR utilities into `assets/`.
+Run `npm run build` to bundle the JavaScript and CSS from `src/` into the `assets/` directory.
 
 ## License
 GPL-2.0+
