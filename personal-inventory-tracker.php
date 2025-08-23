@@ -121,12 +121,30 @@ class PIT_Enhanced_REST {
         return $public_access || current_user_can('read');
     }
 
-    public function permissions_write($request) {
-        // Check for read-only mode and user permissions
-        if (get_option('pit_read_only_mode', false)) {
-            return new WP_Error('read_only', 'Read-only mode enabled', ['status' => 403]);
+    private function verify_nonce( $request ) {
+        $nonce = $request->get_header( 'X-WP-Nonce' );
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+            return new WP_Error( 'invalid_nonce', __( 'Invalid or missing nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
-        return current_user_can('edit_posts');
+
+        return true;
+    }
+
+    public function permissions_write( $request ) {
+        $nonce_check = $this->verify_nonce( $request );
+        if ( is_wp_error( $nonce_check ) ) {
+            return $nonce_check;
+        }
+
+        if ( get_option( 'pit_read_only_mode', false ) ) {
+            return new WP_Error( 'read_only', __( 'Read-only mode enabled', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            return new WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to manage inventory items.', 'personal-inventory-tracker' ), array( 'status' => rest_authorization_required_code() ) );
+        }
+
+        return true;
     }
 
     // Get items with enhanced filtering
