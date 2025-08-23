@@ -23,6 +23,7 @@ class PIT_Admin {
         add_submenu_page( 'pit_dashboard', __( 'Items', 'personal-inventory-tracker' ), __( 'Items', 'personal-inventory-tracker' ), $cap, 'pit_items', array( $this, 'items_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Add/Edit Item', 'personal-inventory-tracker' ), __( 'Add/Edit Item', 'personal-inventory-tracker' ), $cap, 'pit_add_item', array( $this, 'add_item_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Import/Export', 'personal-inventory-tracker' ), __( 'Import/Export', 'personal-inventory-tracker' ), $cap, 'pit_import_export', array( $this, 'import_export_page' ) );
+        add_submenu_page( 'pit_dashboard', __( 'Shopping List', 'personal-inventory-tracker' ), __( 'Shopping List', 'personal-inventory-tracker' ), $cap, 'pit_shopping_list', array( $this, 'shopping_list_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'OCR Receipt', 'personal-inventory-tracker' ), __( 'OCR Receipt', 'personal-inventory-tracker' ), $cap, 'pit_ocr_receipt', array( $this, 'ocr_receipt_page' ) );
     }
 
@@ -264,6 +265,25 @@ document.addEventListener('DOMContentLoaded',function(){
             ),
         ) );
     }
+    public function shopping_list_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        echo '<div class="wrap"><h1>' . esc_html__( 'Shopping List', 'personal-inventory-tracker' ) . '</h1>';
+        include PIT_PLUGIN_DIR . 'templates/shopping-list.php';
+        echo '</div>';
+
+        wp_enqueue_script( 'pit-shopping-list', PIT_PLUGIN_URL . 'assets/shopping-list.js', array(), PIT_VERSION, true );
+        wp_localize_script( 'pit-shopping-list', 'pitApp', array(
+            'restUrl'  => esc_url_raw( rest_url( 'pit/v2/' ) ),
+            'nonce'    => wp_create_nonce( 'wp_rest' ),
+            'settings' => array(
+                'currency' => get_option( 'pit_currency', '$' ),
+            ),
+        ) );
+    }
+
     public function ocr_receipt_page() {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;

@@ -1,0 +1,2 @@
+/*! Personal Inventory Tracker */
+var PITShoppingList=(()=>{var t=document.getElementById("pit-shopping-list"),l,p;t&&(t.textContent="Loading...",fetch(`${(l=window.pitApp)==null?void 0:l.restUrl}shopping-list`,{headers:{"X-WP-Nonce":(p=window.pitApp)==null?void 0:p.nonce}}).then(e=>e.json()).then(e=>{let n=document.createElement("ul");e.forEach(o=>{let i=document.createElement("li");i.textContent=`${o.name} (${o.qty})`,n.appendChild(i)}),t.textContent="",t.appendChild(n)}).catch(()=>{t.textContent="Error loading list"}));})();
