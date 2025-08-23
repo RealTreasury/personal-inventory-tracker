@@ -39,6 +39,16 @@ class PIT_REST {
                 ),
             )
         );
+
+        register_rest_route(
+            'pit/v1',
+            '/recommendations/refresh',
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array( 'PIT_Cron', 'refresh_recommendations' ),
+                'permission_callback' => array( $this, 'permissions_write' ),
+            )
+        );
     }
 
     public function permissions_read( $request ) {
