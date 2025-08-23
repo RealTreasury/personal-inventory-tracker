@@ -13,6 +13,7 @@
         "phpcompatibility/phpcompatibility-wp": "^2.1"
     },
     "scripts": {
+        "phpcs": "phpcs",
         "phpstan": "phpstan analyse"
     },
     "config": {
