@@ -1,22 +1,24 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_CPT {
+class Taxonomy {
 
     public static function register() {
-        register_post_type(
+        register_taxonomy(
+            'pit_category',
             'pit_item',
             array(
                 'labels' => array(
-                    'name'          => __( 'Inventory Items', 'personal-inventory-tracker' ),
-                    'singular_name' => __( 'Inventory Item', 'personal-inventory-tracker' ),
+                    'name'          => __( 'Item Categories', 'personal-inventory-tracker' ),
+                    'singular_name' => __( 'Item Category', 'personal-inventory-tracker' ),
                 ),
                 'public'       => false,
                 'show_ui'      => true,
-                'supports'     => array( 'title' ),
-                'taxonomies'   => array( 'pit_category' ),
+                'hierarchical' => true,
                 'show_in_rest' => false,
             )
         );
@@ -30,4 +32,8 @@ class PIT_CPT {
     public static function deactivate() {
         flush_rewrite_rules();
     }
+}
+
+if ( ! class_exists( 'PIT_Taxonomy' ) ) {
+    class_alias( __NAMESPACE__ . '\\Taxonomy', 'PIT_Taxonomy' );
 }

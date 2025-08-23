@@ -1,4 +1,6 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -7,7 +9,7 @@ if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
     define( 'HOUR_IN_SECONDS', 3600 );
 }
 
-class PIT_Cache {
+class Cache {
 
     /**
      * Retrieve a transient or set it using a callback.
@@ -35,4 +37,8 @@ class PIT_Cache {
     public static function delete( $key ) {
         delete_transient( $key );
     }
+}
+
+if ( ! class_exists( 'PIT_Cache' ) ) {
+    class_alias( __NAMESPACE__ . '\\Cache', 'PIT_Cache' );
 }

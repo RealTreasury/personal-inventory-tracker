@@ -1,9 +1,15 @@
 <?php
+namespace RealTreasury\Inventory;
+
+use WP_Error;
+use WP_REST_Response;
+use WP_REST_Server;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_REST {
+class REST {
 
     protected function verify_nonce( $request ) {
         $nonce = $request->get_header( 'X-WP-Nonce' );
@@ -182,7 +188,7 @@ class PIT_REST {
             '/recommendations/refresh',
             array(
                 'methods'             => WP_REST_Server::CREATABLE,
-                'callback'            => array( 'PIT_Cron', 'refresh_recommendations' ),
+                'callback'            => array( Cron::class, 'refresh_recommendations' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
             )
         );
@@ -365,11 +371,11 @@ class PIT_REST {
     public function export_items( $request ) {
         $format = sanitize_key( $request->get_param( 'format' ) );
         if ( 'csv' === $format ) {
-            $csv = PIT_Import_Export::generate_csv();
+            $csv = Import_Export::generate_csv();
             return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
         }
         if ( 'pdf' === $format ) {
-            $pdf = PIT_Import_Export::generate_pdf();
+            $pdf = Import_Export::generate_pdf();
             return new WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
         }
         return $this->get_items( $request );
@@ -408,4 +414,8 @@ class PIT_REST {
 
         return rest_ensure_response( true );
     }
+}
+
+if ( ! class_exists( 'PIT_REST' ) ) {
+    class_alias( __NAMESPACE__ . '\\REST', 'PIT_REST' );
 }

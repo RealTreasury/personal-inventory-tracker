@@ -1,9 +1,11 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Cron {
+class Cron {
 
     const HOOK = 'pit_refresh_recommendations_daily';
 
@@ -57,4 +59,8 @@ class PIT_Cron {
 
         return $summary;
     }
+}
+
+if ( ! class_exists( 'PIT_Cron' ) ) {
+    class_alias( __NAMESPACE__ . '\\Cron', 'PIT_Cron' );
 }

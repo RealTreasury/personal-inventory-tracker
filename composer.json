@@ -1,0 +1,10 @@
+{
+    "name": "real-treasury/personal-inventory-tracker",
+    "description": "Personal Inventory Tracker",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "RealTreasury\\Inventory\\": "src/RealTreasury/Inventory/"
+        }
+    }
+}

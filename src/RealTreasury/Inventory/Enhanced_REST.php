@@ -1,0 +1,662 @@
+<?php
+namespace RealTreasury\Inventory;
+
+use WP_Error;
+use WP_Query;
+use WP_REST_Response;
+use WP_REST_Server;
+
+class Enhanced_REST {
+    
+    public function register_routes() {
+        // Items endpoints
+        register_rest_route('pit/v2', '/items', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [$this, 'get_items'],
+                'permission_callback' => [$this, 'permissions_read'],
+            ],
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [$this, 'create_item'],
+                'permission_callback' => [$this, 'permissions_write'],
+            ]
+        ]);
+
+        register_rest_route('pit/v2', '/items/(?P<id>\d+)', [
+            [
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => [$this, 'update_item'],
+                'permission_callback' => [$this, 'permissions_write'],
+            ],
+            [
+                'methods' => WP_REST_Server::DELETABLE,
+                'callback' => [$this, 'delete_item'],
+                'permission_callback' => [$this, 'permissions_write'],
+            ]
+        ]);
+
+        // Analytics endpoints
+        register_rest_route('pit/v2', '/analytics', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_analytics'],
+            'permission_callback' => [$this, 'permissions_read'],
+        ]);
+
+        register_rest_route('pit/v2', '/analytics/trends', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_trends'],
+            'permission_callback' => [$this, 'permissions_read'],
+        ]);
+
+        // Shopping list endpoint
+        register_rest_route('pit/v2', '/shopping-list', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_shopping_list'],
+            'permission_callback' => [$this, 'permissions_read'],
+        ]);
+
+        // Bulk operations
+        register_rest_route('pit/v2', '/items/batch', [
+            'methods' => WP_REST_Server::EDITABLE,
+            'callback' => [$this, 'batch_update_items'],
+            'permission_callback' => [$this, 'permissions_write'],
+        ]);
+
+        // Import/Export endpoints
+        register_rest_route('pit/v2', '/export', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'export_data'],
+            'permission_callback' => [$this, 'permissions_read'],
+        ]);
+
+        register_rest_route('pit/v2', '/import', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [$this, 'import_data'],
+            'permission_callback' => [$this, 'permissions_write'],
+        ]);
+
+        // OCR processing endpoint
+        register_rest_route('pit/v2', '/ocr/process', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [$this, 'process_ocr_results'],
+            'permission_callback' => [$this, 'permissions_write'],
+        ]);
+
+        // Categories endpoint
+        register_rest_route('pit/v2', '/categories', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [$this, 'get_categories'],
+            'permission_callback' => [$this, 'permissions_read'],
+        ]);
+    }
+
+    // Permission callbacks
+    public function permissions_read($request) {
+        // Allow logged-in users or public if enabled
+        $public_access = get_option('pit_public_access', false);
+        return $public_access || current_user_can('read');
+    }
+
+    private function verify_nonce( $request ) {
+        $nonce = $request->get_header( 'X-WP-Nonce' );
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+            return new WP_Error( 'invalid_nonce', __( 'Invalid or missing nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
+        return true;
+    }
+
+    public function permissions_write( $request ) {
+        $nonce_check = $this->verify_nonce( $request );
+        if ( is_wp_error( $nonce_check ) ) {
+            return $nonce_check;
+        }
+
+        if ( get_option( 'pit_read_only_mode', false ) ) {
+            return new WP_Error( 'read_only', __( 'Read-only mode enabled', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            return new WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to manage inventory items.', 'personal-inventory-tracker' ), array( 'status' => rest_authorization_required_code() ) );
+        }
+
+        return true;
+    }
+
+    // Get items with enhanced filtering
+    public function get_items($request) {
+        $search = $request->get_param('search');
+        $category = $request->get_param('category');
+        $status = $request->get_param('status');
+        $sort = $request->get_param('sort');
+        $order = $request->get_param('order');
+        $per_page = min(100, max(1, (int) $request->get_param('per_page')));
+        $page = max(1, (int) $request->get_param('page'));
+
+        $args = [
+            'post_type' => 'pit_item',
+            'post_status' => 'publish',
+            'posts_per_page' => $per_page,
+            'paged' => $page,
+        ];
+
+        // Search functionality
+        if ($search) {
+            $args['s'] = sanitize_text_field($search);
+        }
+
+        // Category filter
+        if ($category) {
+            $args['tax_query'] = [
+                [
+                    'taxonomy' => 'pit_category',
+                    'field' => 'slug',
+                    'terms' => sanitize_text_field($category),
+                ]
+            ];
+        }
+
+        // Status filter
+        if ($status) {
+            switch ($status) {
+                case 'low-stock':
+                    $args['meta_query'] = [
+                        [
+                            'key' => 'pit_qty',
+                            'value' => 5,
+                            'compare' => '<='
+                        ]
+                    ];
+                    break;
+                case 'out-of-stock':
+                    $args['meta_query'] = [
+                        [
+                            'key' => 'pit_qty',
+                            'value' => 0,
+                            'compare' => '='
+                        ]
+                    ];
+                    break;
+            }
+        }
+
+        // Sorting
+        if ($sort) {
+            switch ($sort) {
+                case 'title':
+                    $args['orderby'] = 'title';
+                    break;
+                case 'date':
+                    $args['orderby'] = 'date';
+                    break;
+                case 'quantity':
+                    $args['orderby'] = 'meta_value_num';
+                    $args['meta_key'] = 'pit_qty';
+                    break;
+            }
+            $args['order'] = ($order === 'desc') ? 'DESC' : 'ASC';
+        }
+
+        $query = new WP_Query($args);
+        $items = [];
+
+        foreach ($query->posts as $post) {
+            $items[] = $this->prepare_item($post);
+        }
+
+        $response = rest_ensure_response($items);
+        
+        // Add pagination headers
+        $response->header('X-WP-Total', $query->found_posts);
+        $response->header('X-WP-TotalPages', $query->max_num_pages);
+
+        return $response;
+    }
+
+    // Create item
+    public function create_item($request) {
+        $title = sanitize_text_field($request->get_param('title'));
+        $qty = absint($request->get_param('qty'));
+        $category = sanitize_text_field($request->get_param('category'));
+        $unit = sanitize_text_field($request->get_param('unit'));
+        $threshold = absint($request->get_param('threshold'));
+        $notes = sanitize_textarea_field($request->get_param('notes'));
+
+        if (empty($title)) {
+            return new WP_Error('missing_title', 'Item title is required', ['status' => 400]);
+        }
+
+        $post_id = wp_insert_post([
+            'post_type' => 'pit_item',
+            'post_title' => $title,
+            'post_status' => 'publish',
+        ]);
+
+        if (is_wp_error($post_id)) {
+            return $post_id;
+        }
+
+        // Update metadata
+        update_post_meta($post_id, 'pit_qty', $qty);
+        update_post_meta($post_id, 'pit_unit', $unit);
+        update_post_meta($post_id, 'pit_threshold', $threshold);
+        update_post_meta($post_id, 'pit_notes', $notes);
+        update_post_meta($post_id, 'pit_created_via', 'frontend');
+
+        // Set category
+        if ($category) {
+            $term = get_term_by('slug', $category, 'pit_category');
+            if ($term) {
+                wp_set_post_terms($post_id, [$term->term_id], 'pit_category');
+            }
+        }
+
+        return rest_ensure_response($this->prepare_item(get_post($post_id)));
+    }
+
+    // Update item
+    public function update_item($request) {
+        $post_id = absint($request->get_param('id'));
+        
+        if (!get_post($post_id) || get_post_type($post_id) !== 'pit_item') {
+            return new WP_Error('item_not_found', 'Item not found', ['status' => 404]);
+        }
+
+        $updates = [];
+        
+        if ($request->has_param('title')) {
+            wp_update_post([
+                'ID' => $post_id,
+                'post_title' => sanitize_text_field($request->get_param('title'))
+            ]);
+        }
+
+        $meta_fields = ['qty', 'unit', 'threshold', 'notes', 'last_purchased'];
+        foreach ($meta_fields as $field) {
+            if ($request->has_param($field)) {
+                $value = $request->get_param($field);
+                if (in_array($field, ['qty', 'threshold'])) {
+                    $value = absint($value);
+                } else {
+                    $value = sanitize_text_field($value);
+                }
+                update_post_meta($post_id, "pit_{$field}", $value);
+            }
+        }
+
+        // Handle purchased status
+        if ($request->has_param('purchased')) {
+            $purchased = (bool) $request->get_param('purchased');
+            update_post_meta($post_id, 'pit_purchased', $purchased);
+            if ($purchased) {
+                update_post_meta($post_id, 'pit_last_purchased', current_time('Y-m-d'));
+            }
+        }
+
+        return rest_ensure_response($this->prepare_item(get_post($post_id)));
+    }
+
+    // Delete item
+    public function delete_item($request) {
+        $post_id = absint($request->get_param('id'));
+        
+        if (!get_post($post_id) || get_post_type($post_id) !== 'pit_item') {
+            return new WP_Error('item_not_found', 'Item not found', ['status' => 404]);
+        }
+
+        $deleted = wp_trash_post($post_id);
+        
+        if (!$deleted) {
+            return new WP_Error('delete_failed', 'Failed to delete item', ['status' => 500]);
+        }
+
+        return rest_ensure_response(['deleted' => true]);
+    }
+
+    // Get analytics data
+    public function get_analytics($request) {
+        $range   = absint($request->get_param('range')) ?: 30;
+        $cutoff  = strtotime("-{$range} days");
+        $items   = get_posts([
+            'post_type'      => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        ]);
+
+        $analytics = [
+            'items'            => [],
+            'purchase_trends'  => [],
+            'total_items'      => count($items),
+            'total_quantity'   => 0,
+            'low_stock_count'  => 0,
+            'out_of_stock_count' => 0,
+            'categories'       => [],
+            'stock_levels'     => [
+                'out_of_stock' => 0,
+                'low_stock'    => 0,
+                'medium_stock' => 0,
+                'high_stock'   => 0,
+            ],
+            'recent_purchases' => [],
+            'top_categories'   => [],
+        ];
+
+        $trends = [];
+
+        foreach ($items as $item) {
+            $qty = absint(get_post_meta($item->ID, 'pit_qty', true));
+            $analytics['total_quantity'] += $qty;
+
+            $analytics['items'][] = $this->prepare_item($item);
+
+            // Stock level categorization
+            if ($qty === 0) {
+                $analytics['out_of_stock_count']++;
+                $analytics['stock_levels']['out_of_stock']++;
+            } elseif ($qty <= 5) {
+                $analytics['low_stock_count']++;
+                $analytics['stock_levels']['low_stock']++;
+            } elseif ($qty <= 20) {
+                $analytics['stock_levels']['medium_stock']++;
+            } else {
+                $analytics['stock_levels']['high_stock']++;
+            }
+
+            // Category breakdown
+            $categories = wp_get_post_terms($item->ID, 'pit_category', ['fields' => 'names']);
+            foreach ($categories as $category) {
+                if (!isset($analytics['categories'][$category])) {
+                    $analytics['categories'][$category] = ['count' => 0, 'quantity' => 0];
+                }
+                $analytics['categories'][$category]['count']++;
+                $analytics['categories'][$category]['quantity'] += $qty;
+            }
+
+            // Recent purchases
+            $purchased       = get_post_meta($item->ID, 'pit_purchased', true);
+            $last_purchased  = get_post_meta($item->ID, 'pit_last_purchased', true);
+
+            if ($purchased && $last_purchased && strtotime($last_purchased) >= $cutoff) {
+                $analytics['recent_purchases'][] = [
+                    'id'       => $item->ID,
+                    'title'    => $item->post_title,
+                    'date'     => $last_purchased,
+                    'quantity' => $qty,
+                ];
+
+                $date_key = date('Y-m-d', strtotime($last_purchased));
+                if (!isset($trends[$date_key])) {
+                    $trends[$date_key] = 0;
+                }
+                $trends[$date_key] += $qty;
+            }
+        }
+
+        foreach ($trends as $date => $quantity) {
+            $analytics['purchase_trends'][] = [
+                'date'     => $date,
+                'quantity' => $quantity,
+            ];
+        }
+
+        // Sort recent purchases by date
+        usort($analytics['recent_purchases'], function($a, $b) {
+            return strtotime($b['date']) - strtotime($a['date']);
+        });
+        $analytics['recent_purchases'] = array_slice($analytics['recent_purchases'], 0, 10);
+
+        // Top categories
+        arsort($analytics['categories']);
+        $analytics['top_categories'] = array_slice($analytics['categories'], 0, 5, true);
+
+        return rest_ensure_response($analytics);
+    }
+
+    // Get shopping list
+    public function get_shopping_list($request) {
+        $items = get_posts([
+            'post_type' => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        ]);
+
+        $shopping_list = [];
+
+        foreach ($items as $item) {
+            $qty = absint(get_post_meta($item->ID, 'pit_qty', true));
+            $threshold = absint(get_post_meta($item->ID, 'pit_threshold', true));
+            $purchased = get_post_meta($item->ID, 'pit_purchased', true);
+
+            // Add to shopping list if below threshold or marked as needed
+            if (($threshold > 0 && $qty <= $threshold) || (!$purchased && $qty === 0)) {
+                $categories = wp_get_post_terms($item->ID, 'pit_category', ['fields' => 'names']);
+                
+                $shopping_list[] = [
+                    'id' => $item->ID,
+                    'title' => $item->post_title,
+                    'current_qty' => $qty,
+                    'threshold' => $threshold,
+                    'category' => $categories ? $categories[0] : 'Uncategorized',
+                    'priority' => $qty === 0 ? 'high' : 'medium',
+                    'estimated_cost' => get_post_meta($item->ID, 'pit_estimated_cost', true) ?: 0
+                ];
+            }
+        }
+
+        // Sort by priority and category
+        usort($shopping_list, function($a, $b) {
+            if ($a['priority'] !== $b['priority']) {
+                return $a['priority'] === 'high' ? -1 : 1;
+            }
+            return strcmp($a['category'], $b['category']);
+        });
+
+        return rest_ensure_response([
+            'items' => $shopping_list,
+            'total_items' => count($shopping_list),
+            'estimated_total' => array_sum(array_column($shopping_list, 'estimated_cost'))
+        ]);
+    }
+
+    // Process OCR results
+    public function process_ocr_results($request) {
+        $results = $request->get_param('results');
+        $auto_add = $request->get_param('auto_add');
+
+        if (!is_array($results)) {
+            return new WP_Error('invalid_results', 'Invalid OCR results', ['status' => 400]);
+        }
+
+        $processed = [];
+        $added = [];
+
+        foreach ($results as $result) {
+            $text = sanitize_text_field($result['text']);
+            $confidence = absint($result['confidence']);
+            $quantity = absint($result['quantity'] ?? 1);
+
+            // Skip low confidence or empty results
+            if ($confidence < 30 || empty($text) || strlen($text) < 2) {
+                continue;
+            }
+
+            // Try to match with existing items
+            $existing = $this->find_similar_item($text);
+            
+            $processed[] = [
+                'text' => $text,
+                'confidence' => $confidence,
+                'quantity' => $quantity,
+                'existing_match' => $existing,
+                'suggested_action' => $existing ? 'update' : 'create'
+            ];
+
+            // Auto-add if enabled
+            if ($auto_add && $confidence >= 60) {
+                if ($existing) {
+                    // Update existing item quantity
+                    $current_qty = absint(get_post_meta($existing['id'], 'pit_qty', true));
+                    update_post_meta($existing['id'], 'pit_qty', $current_qty + $quantity);
+                    $added[] = ['action' => 'updated', 'item' => $existing];
+                } else {
+                    // Create new item
+                    $post_id = wp_insert_post([
+                        'post_type' => 'pit_item',
+                        'post_title' => $text,
+                        'post_status' => 'publish',
+                    ]);
+
+                    if (!is_wp_error($post_id)) {
+                        update_post_meta($post_id, 'pit_qty', $quantity);
+                        update_post_meta($post_id, 'pit_purchased', true);
+                        update_post_meta($post_id, 'pit_last_purchased', current_time('Y-m-d'));
+                        update_post_meta($post_id, 'pit_created_via', 'ocr');
+
+                        $added[] = [
+                            'action' => 'created',
+                            'item' => $this->prepare_item(get_post($post_id))
+                        ];
+                    }
+                }
+            }
+        }
+
+        return rest_ensure_response([
+            'processed' => $processed,
+            'auto_added' => $added,
+            'total_processed' => count($processed)
+        ]);
+    }
+
+    // Get categories
+    public function get_categories($request) {
+        $categories = get_terms([
+            'taxonomy' => 'pit_category',
+            'hide_empty' => false,
+        ]);
+
+        $formatted = [];
+        foreach ($categories as $category) {
+            $formatted[] = [
+                'id' => $category->term_id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'count' => $category->count
+            ];
+        }
+
+        return rest_ensure_response($formatted);
+    }
+
+    // Helper function to prepare item data
+    private function prepare_item($post) {
+        if (!$post) return null;
+
+        $categories = wp_get_post_terms($post->ID, 'pit_category', ['fields' => 'names']);
+        
+        return [
+            'id' => $post->ID,
+            'title' => $post->post_title,
+            'qty' => absint(get_post_meta($post->ID, 'pit_qty', true)),
+            'unit' => get_post_meta($post->ID, 'pit_unit', true),
+            'threshold' => absint(get_post_meta($post->ID, 'pit_threshold', true)),
+            'purchased' => (bool) get_post_meta($post->ID, 'pit_purchased', true),
+            'last_purchased' => get_post_meta($post->ID, 'pit_last_purchased', true),
+            'notes' => get_post_meta($post->ID, 'pit_notes', true),
+            'category' => $categories ? $categories[0] : null,
+            'created_at' => $post->post_date,
+            'updated_at' => $post->post_modified,
+            'status' => $this->get_item_status($post->ID)
+        ];
+    }
+
+    // Helper to get item status
+    private function get_item_status($post_id) {
+        $qty = absint(get_post_meta($post_id, 'pit_qty', true));
+        $threshold = absint(get_post_meta($post_id, 'pit_threshold', true));
+
+        if ($qty === 0) return 'out-of-stock';
+        if ($threshold > 0 && $qty <= $threshold) return 'low-stock';
+        return 'in-stock';
+    }
+
+    // Helper to find similar items
+    private function find_similar_item($text) {
+        $existing_items = get_posts([
+            'post_type' => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        ]);
+
+        $normalized_text = strtolower(trim($text));
+        
+        foreach ($existing_items as $item) {
+            $item_title = strtolower(trim($item->post_title));
+            
+            // Check for exact match or contains
+            if ($item_title === $normalized_text || 
+                strpos($item_title, $normalized_text) !== false ||
+                strpos($normalized_text, $item_title) !== false) {
+                
+                return $this->prepare_item($item);
+            }
+        }
+
+        return null;
+    }
+
+    // Export data
+    public function export_data($request) {
+        $format = $request->get_param('format') ?: 'csv';
+        $items = get_posts([
+            'post_type' => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status' => 'publish'
+        ]);
+
+        $data = [];
+        foreach ($items as $item) {
+            $data[] = $this->prepare_item($item);
+        }
+
+        if ($format === 'json') {
+            return rest_ensure_response($data);
+        }
+
+        // CSV format
+        $csv_data = $this->array_to_csv($data);
+        
+        return new WP_REST_Response($csv_data, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="inventory-export-' . date('Y-m-d') . '.csv"'
+        ]);
+    }
+
+    // Helper to convert array to CSV
+    private function array_to_csv($data) {
+        if (empty($data)) return '';
+
+        $output = fopen('php://temp', 'w+');
+        
+        // Header row
+        fputcsv($output, array_keys($data[0]));
+        
+        // Data rows
+        foreach ($data as $row) {
+            fputcsv($output, $row);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+
+        return $csv;
+    }
+}
+
+if ( ! class_exists( 'PIT_Enhanced_REST' ) ) {
+    class_alias( __NAMESPACE__ . '\\Enhanced_REST', 'PIT_Enhanced_REST' );
+}
+
+// Enhanced frontend functionality

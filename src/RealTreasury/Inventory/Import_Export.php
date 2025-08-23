@@ -1,9 +1,16 @@
 <?php
+namespace RealTreasury\Inventory;
+
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Import_Export {
+class Import_Export {
 
     public static function get_headers() {
         return array(
@@ -181,4 +188,8 @@ class PIT_Import_Export {
         }, $lines ) ), $mapping );
         return rest_ensure_response( true );
     }
+}
+
+if ( ! class_exists( 'PIT_Import_Export' ) ) {
+    class_alias( __NAMESPACE__ . '\\Import_Export', 'PIT_Import_Export' );
 }
