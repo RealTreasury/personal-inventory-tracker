@@ -2,6 +2,16 @@
 
 Learn how to digitize receipt data using the plugin's OCR scanner.
 
+## Front-end shortcode
+
+Display the scanner on any public page with the `[pit_ocr_scanner]` shortcode.
+
+### Create a test page
+1. In the WordPress dashboard, go to **Pages → Add New**.
+2. Enter a title such as "Receipt Scanner Test".
+3. Add the shortcode `[pit_ocr_scanner]` to the content area.
+4. Publish the page and open it on the front end to try scanning receipts.
+
 ## Camera capture
 1. Open the **OCR Receipt** page in the dashboard.
 2. Choose **Use Camera** and allow browser access to your camera.
