@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import Papa from 'papaparse';
 import {
   Search, Plus, Upload, Download, Camera, BarChart3,
   TrendingUp, Package, AlertTriangle, CheckCircle,
@@ -9,6 +10,19 @@ import {
 const AnalyticsView = lazy(() => import('./AnalyticsView.jsx'));
 const OCRScannerView = lazy(() => import('./OCRScannerView.jsx'));
 const ImportExportView = lazy(() => import('./ImportExportView.jsx'));
+
+export const buildCSVContent = itemsList =>
+  Papa.unparse(
+    {
+      fields: ['Title', 'Quantity', 'Purchased'],
+      data: itemsList.map(item => [
+        item.title,
+        item.qty || 0,
+        item.purchased ? 'Yes' : 'No'
+      ])
+    },
+    { newline: '\n' }
+  );
 
 // Enhanced Inventory Management App
 const InventoryApp = () => {
@@ -358,11 +372,8 @@ const InventoryApp = () => {
 
   // Export CSV function
   const exportCSV = () => {
-    const csvContent = [
-      ['Title', 'Quantity', 'Purchased'],
-      ...items.map(item => [item.title, item.qty || 0, item.purchased ? 'Yes' : 'No'])
-    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    
+    const csvContent = buildCSVContent(items);
+
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
