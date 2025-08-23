@@ -288,26 +288,37 @@ document.addEventListener('DOMContentLoaded',function(){
             return;
         }
 
-        $items = get_posts( array(
-            'post_type'      => 'pit_item',
-            'posts_per_page' => -1,
-            'post_status'    => 'publish',
-        ) );
+        $items       = get_posts(
+            array(
+                'post_type'      => 'pit_item',
+                'posts_per_page' => -1,
+                'post_status'    => 'publish',
+            )
+        );
+
         $choices = array();
         foreach ( $items as $item ) {
-            $choices[] = array( 'id' => $item->ID, 'name' => $item->post_title );
+            $choices[] = array(
+                'id'    => $item->ID,
+                'title' => $item->post_title,
+            );
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'OCR Receipt', 'personal-inventory-tracker' ) . '</h1>';
-        echo '<label for="pit-ocr-file" class="screen-reader-text">' . esc_html__( 'Upload receipt image', 'personal-inventory-tracker' ) . '</label><input type="file" id="pit-ocr-file" accept="image/*" />';
-        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="pit_ocr_update" />';
-        wp_nonce_field( 'pit_ocr_update' );
-        echo '<table class="widefat" id="pit-ocr-results"><thead><tr><th>' . esc_html__( 'Line', 'personal-inventory-tracker' ) . '</th><th>' . esc_html__( 'Item', 'personal-inventory-tracker' ) . '</th><th>' . esc_html__( 'Qty', 'personal-inventory-tracker' ) . '</th></tr></thead><tbody></tbody></table>';
-        echo '<p><button class="button button-primary" id="pit-ocr-submit" type="submit">' . esc_html__( 'Update Inventory', 'personal-inventory-tracker' ) . '</button></p>';
-        echo '</form></div>';
+        include PIT_PLUGIN_DIR . 'templates/ocr-scanner.php';
+        echo '</div>';
 
-        echo '<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js"></script>';
-        echo '<script>const pitItems=' . wp_json_encode( $choices ) . ';' . file_get_contents( PIT_PLUGIN_DIR . 'includes/js/ocr.js' ) . '</script>';
+        wp_enqueue_script( 'tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js', array(), null, true );
+        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
+        wp_localize_script(
+            'pit-ocr-scanner',
+            'pitApp',
+            array(
+                'restUrl' => esc_url_raw( rest_url( 'pit/v2/' ) ),
+                'nonce'   => wp_create_nonce( 'wp_rest' ),
+                'items'   => $choices,
+            )
+        );
     }
 
     public function ocr_update() {
