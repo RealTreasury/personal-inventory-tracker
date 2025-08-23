@@ -1,9 +1,11 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Import_Export {
+class Import_Export {
 
     public static function get_headers() {
         return array(
@@ -156,29 +158,22 @@ class PIT_Import_Export {
         );
     }
 
-    public static function rest_export( WP_REST_Request $request ) {
+    public static function rest_export( \WP_REST_Request $request ) {
         $csv = self::generate_csv();
-        return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
+        if ( headers_sent() ) {
+            return new \WP_Error( 'headers_sent', __( 'Headers already sent.', 'personal-inventory-tracker' ) );
+        }
+        return $csv;
     }
 
-    public static function rest_import( WP_REST_Request $request ) {
-        $csv = $request->get_param( 'csv' );
-        if ( empty( $csv ) ) {
-            return new WP_Error( 'pit_no_csv', __( 'No CSV data supplied.', 'personal-inventory-tracker' ), array( 'status' => 400 ) );
+    public static function rest_import( \WP_REST_Request $request ) {
+        $file = $request->get_file_params();
+        if ( empty( $file['file'] ) || empty( $file['file']['tmp_name'] ) ) {
+            return new \WP_Error( 'no_file', __( 'No file provided.', 'personal-inventory-tracker' ) );
         }
-        $csv     = wp_unslash( $csv );
-        $lines   = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
-        $headers = array_shift( $lines );
+        $csv = file_get_contents( $file['file']['tmp_name'] );
         $mapping = array();
-        foreach ( self::get_headers() as $field ) {
-            $index = array_search( $field, $headers, true );
-            if ( false !== $index ) {
-                $mapping[ $field ] = $index;
-            }
-        }
-        self::import_from_csv_string( implode( "\n", array_map( function( $row ) {
-            return implode( ',', $row );
-        }, $lines ) ), $mapping );
-        return rest_ensure_response( true );
+        self::import_from_csv_string( $csv, $mapping );
+        return true;
     }
 }

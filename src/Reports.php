@@ -1,4 +1,6 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -7,7 +9,7 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
     define( 'DAY_IN_SECONDS', 86400 );
 }
 
-class PIT_Reports {
+class Reports {
 
     /**
      * Retrieve summary data from cache or compute it.
@@ -15,7 +17,7 @@ class PIT_Reports {
      * @return array
      */
     public function get_summary() {
-        return PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
+        return Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
     }
 
     /**
@@ -111,6 +113,6 @@ class PIT_Reports {
         echo '</div>';
 
         // Simple bar chart.
-        echo '<script>(function(){var c=document.getElementById("pit-overview-chart");if(!c||!c.getContext)return;var ctx=c.getContext("2d");var vals=[' . $total_items . ',' . $low_stock . ',' . $due_soon . '];var max=Math.max.apply(null,vals)||1;var colors=["#4caf50","#ff9800","#f44336"];var width=50;for(var i=0;i<vals.length;i++){var h=(vals[i]/max)*100;ctx.fillStyle=colors[i];ctx.fillRect(10+i*(width+10),110-h,width,h);}ctx.fillStyle="#000";ctx.textBaseline="top";ctx.fillText("' . esc_js( __( 'Total', 'personal-inventory-tracker' ) ) . '",10,130);ctx.fillText("' . esc_js( __( 'Low', 'personal-inventory-tracker' ) ) . '",10+width+10,130);ctx.fillText("' . esc_js( __( 'Due', 'personal-inventory-tracker' ) ) . '",10+2*(width+10),130);}());</script>';
+        echo '<script>(function(){var c=document.getElementById("pit-overview-chart");if(!c||!c.getContext)return;var ctx=c.getContext("2d");var vals[' . $total_items . ',' . $low_stock . ',' . $due_soon . '];var max=Math.max.apply(null,vals)||1;var colors=["#4caf50","#ff9800","#f44336"];var width=50;for(var i=0;i<vals.length;i++){var h=(vals[i]/max)*100;ctx.fillStyle=colors[i];ctx.fillRect(10+i*(width+10),110-h,width,h);}ctx.fillStyle="#000";ctx.textBaseline="top";ctx.fillText("' . esc_js( __( 'Total', 'personal-inventory-tracker' ) ) . '",10,130);ctx.fillText("' . esc_js( __( 'Low', 'personal-inventory-tracker' ) ) . '",10+width+10,130);ctx.fillText("' . esc_js( __( 'Due', 'personal-inventory-tracker' ) ) . '",10+2*(width+10),130);}());</script>';
     }
 }

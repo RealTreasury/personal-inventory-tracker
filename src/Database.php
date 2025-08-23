@@ -1,13 +1,14 @@
 <?php
+namespace RealTreasury\Inventory;
+
 /**
  * Handles database migrations for Personal Inventory Tracker.
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Database {
+class Database {
 
     const SCHEMA_VERSION = '1.0';
 

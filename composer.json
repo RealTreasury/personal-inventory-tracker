@@ -1,0 +1,10 @@
+{
+    "name": "realtreasury/personal-inventory-tracker",
+    "type": "wordpress-plugin",
+    "autoload": {
+        "psr-4": {
+            "RealTreasury\\Inventory\\": "src/"
+        }
+    },
+    "require": {}
+}

@@ -1,9 +1,14 @@
 <?php
+namespace RealTreasury\Inventory;
+
+use RealTreasury\Inventory\Reports;
+use RealTreasury\Inventory\List_Table;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Admin {
+class Admin {
 
     public function init() {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
@@ -39,7 +44,7 @@ class PIT_Admin {
 
         echo '<div class="wrap"><h1>' . esc_html__( 'Inventory Dashboard', 'personal-inventory-tracker' ) . '</h1>';
 
-        $reports = new PIT_Reports();
+        $reports = new Reports();
         $reports->render_dashboard();
 
         echo '</div>';
@@ -54,8 +59,7 @@ class PIT_Admin {
             );
         }
 
-        require_once PIT_PLUGIN_DIR . 'includes/class-pit-list-table.php';
-        $list_table = new PIT_List_Table();
+        $list_table = new List_Table();
         $list_table->process_bulk_action();
         $list_table->prepare_items();
 

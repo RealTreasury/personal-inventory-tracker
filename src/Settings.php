@@ -1,9 +1,11 @@
 <?php
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Settings {
+class Settings {
 
     const OPTION_NAME = 'pit_settings';
 
@@ -178,5 +180,3 @@ class PIT_Settings {
         return $output;
     }
 }
-
-PIT_Settings::init();
