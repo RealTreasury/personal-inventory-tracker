@@ -27,7 +27,16 @@ class PIT_Admin {
     }
 
     public function dashboard_page() {
-        echo '<div class="wrap"><h1>' . esc_html__( 'Inventory Dashboard', 'personal-inventory-tracker' ) . '</h1></div>';
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        echo '<div class="wrap"><h1>' . esc_html__( 'Inventory Dashboard', 'personal-inventory-tracker' ) . '</h1>';
+
+        $reports = new PIT_Reports();
+        $reports->render_dashboard();
+
+        echo '</div>';
     }
 
     public function items_page() {
