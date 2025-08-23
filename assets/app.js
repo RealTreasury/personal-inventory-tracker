@@ -1,2 +1,2 @@
-/*! Personal Inventory Tracker */
+/*! Personal Inventory Tracker Enhanced */
 var PITApp=(()=>{var r=Object.defineProperty;var o=Object.getOwnPropertyDescriptor;var a=Object.getOwnPropertyNames;var u=Object.prototype.hasOwnProperty;var c=(n,i)=>{for(var t in i)r(n,t,{get:i[t],enumerable:!0})},d=(n,i,t,p)=>{if(i&&typeof i=="object"||typeof i=="function")for(let e of a(i))!u.call(n,e)&&e!==t&&r(n,e,{get:()=>i[e],enumerable:!(p=o(i,e))||p.enumerable});return n};var f=n=>d(r({},"__esModule",{value:!0}),n);var z={};c(z,{getVersion:()=>x,initializeApp:()=>l});function l(){return"Enhanced app initialized"}function x(){return"1.0.0"}return f(z);})();

@@ -12,7 +12,7 @@ const baseConfig = {
   sourcemap: isDev,
   target: ['es2018'],
   external: [],
-  banner: { js: '/*! Personal Inventory Tracker */' },
+  banner: { js: '/*! Personal Inventory Tracker Enhanced */' },
   logLevel: 'info',
 };
 
