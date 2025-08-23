@@ -22,6 +22,7 @@ define( 'PIT_VERSION', '2.0.0' );
 require_once PIT_PLUGIN_DIR . 'vendor/autoload.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-blocks.php';
 
 // Enhanced REST API Class
 class PIT_Enhanced_REST {

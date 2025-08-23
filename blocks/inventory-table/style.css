@@ -1,0 +1,17 @@
+.wp-block-personal-inventory-tracker-inventory-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.wp-block-personal-inventory-tracker-inventory-table th,
+.wp-block-personal-inventory-tracker-inventory-table td {
+    border: 1px solid #ccc;
+    padding: 4px;
+}
+
+.pit-pagination {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}

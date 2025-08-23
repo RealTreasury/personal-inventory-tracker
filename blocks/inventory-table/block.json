@@ -1,0 +1,17 @@
+{
+  "apiVersion": 2,
+  "name": "personal-inventory-tracker/inventory-table",
+  "title": "Inventory Table",
+  "description": "Display inventory items with filters and pagination.",
+  "category": "widgets",
+  "icon": "list-view",
+  "attributes": {
+    "perPage": { "type": "number", "default": 10 },
+    "search": { "type": "string", "default": "" },
+    "category": { "type": "string", "default": "" },
+    "page": { "type": "number", "default": 1 }
+  },
+  "style": "file:./style.css",
+  "script": "file:./index.js",
+  "render": "file:./render.php"
+}
