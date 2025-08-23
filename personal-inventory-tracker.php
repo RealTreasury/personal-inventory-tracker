@@ -680,64 +680,98 @@ class PIT_Enhanced_REST {
 
 // Enhanced frontend functionality
 function pit_enqueue_enhanced_frontend() {
-    $app_js = PIT_PLUGIN_DIR . 'assets/app.js';
-    $app_css = PIT_PLUGIN_DIR . 'assets/app.css';
-    
-    // Enqueue React and dependencies
-    wp_enqueue_script('react', 'https://unpkg.com/react@18/umd/react.production.min.js', [], '18.0.0', true);
-    wp_enqueue_script('react-dom', 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', ['react'], '18.0.0', true);
-    
-    // Enqueue Tesseract.js for OCR
-    wp_enqueue_script('tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js', [], '5.0.0', true);
-    
-    // Enqueue Chart.js for analytics
-    wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js', [], '4.0.0', true);
-    
-    // Enhanced CSS
-    wp_enqueue_style('pit-enhanced', PIT_PLUGIN_URL . 'assets/app.css', [], PIT_VERSION);
-    
-    // Main app script
-    wp_enqueue_script('pit-enhanced', PIT_PLUGIN_URL . 'assets/app.js', ['react', 'react-dom'], PIT_VERSION, true);
+    if ( ! is_singular() ) {
+        return;
+    }
 
-    // Enhanced localization
-    wp_localize_script('pit-enhanced', 'pitApp', [
-        'restUrl' => rest_url('pit/v2/'),
-        'nonce' => wp_create_nonce('wp_rest'),
-        'currentUser' => get_current_user_id(),
-        'userCan' => [
-            'edit' => current_user_can('edit_posts'),
-            'delete' => current_user_can('delete_posts'),
-            'manage' => current_user_can('manage_options')
-        ],
-        'settings' => [
-            'publicAccess' => get_option('pit_public_access', false),
-            'readOnlyMode' => get_option('pit_read_only_mode', false),
-            'defaultConfidence' => get_option('pit_ocr_confidence', 60),
-            'currency' => get_option('pit_currency', '$')
-        ],
-        'i18n' => [
-            'dashboard' => __('Dashboard', 'personal-inventory-tracker'),
-            'inventory' => __('Inventory', 'personal-inventory-tracker'),
-            'analytics' => __('Analytics', 'personal-inventory-tracker'),
-            'scanner' => __('Scanner', 'personal-inventory-tracker'),
-            'shoppingList' => __('Shopping List', 'personal-inventory-tracker'),
-            'search' => __('Search items...', 'personal-inventory-tracker'),
-            'addItem' => __('Add Item', 'personal-inventory-tracker'),
-            'totalItems' => __('Total Items', 'personal-inventory-tracker'),
-            'lowStock' => __('Low Stock', 'personal-inventory-tracker'),
-            'outOfStock' => __('Out of Stock', 'personal-inventory-tracker'),
-            'recentPurchases' => __('Recent Purchases', 'personal-inventory-tracker'),
-            'exportData' => __('Export Data', 'personal-inventory-tracker'),
-            'importData' => __('Import Data', 'personal-inventory-tracker'),
-            'scanReceipt' => __('Scan Receipt', 'personal-inventory-tracker'),
-            'categories' => __('Categories', 'personal-inventory-tracker'),
-            'confirmDelete' => __('Are you sure you want to delete this item?', 'personal-inventory-tracker'),
-            'loading' => __('Loading...', 'personal-inventory-tracker'),
-            'error' => __('An error occurred', 'personal-inventory-tracker'),
-            'success' => __('Operation completed successfully', 'personal-inventory-tracker')
-        ]
-    ]);
+    $post = get_post();
+    if ( ! $post ) {
+        return;
+    }
+
+    $content   = $post->post_content;
+    $has_app   = has_shortcode( $content, 'pit_enhanced' ) || has_shortcode( $content, 'pit_dashboard' ) || has_shortcode( $content, 'pit_app' );
+    $has_ocr   = has_shortcode( $content, 'pit_ocr_scanner' );
+
+    if ( ! $has_app && ! $has_ocr ) {
+        return;
+    }
+
+    $app_js  = PIT_PLUGIN_DIR . 'assets/app.js';
+    $app_css = PIT_PLUGIN_DIR . 'assets/app.css';
+
+    $script_args = [
+        'in_footer' => true,
+        'strategy'  => 'defer',
+    ];
+
+    wp_register_script( 'react', 'https://unpkg.com/react@18/umd/react.production.min.js', [], '18.0.0', $script_args );
+    wp_register_script( 'react-dom', 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', [ 'react' ], '18.0.0', $script_args );
+    wp_enqueue_script( 'react' );
+    wp_enqueue_script( 'react-dom' );
+
+    wp_register_script( 'chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js', [], '4.0.0', $script_args );
+    wp_enqueue_script( 'chartjs' );
+
+    if ( $has_ocr ) {
+        wp_register_script( 'tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js', [], '5.0.0', $script_args );
+        wp_enqueue_script( 'tesseract' );
+    }
+
+    if ( file_exists( $app_css ) ) {
+        wp_register_style( 'pit-enhanced', PIT_PLUGIN_URL . 'assets/app.css', [], PIT_VERSION );
+        wp_enqueue_style( 'pit-enhanced' );
+    }
+
+    if ( file_exists( $app_js ) ) {
+        $deps = [ 'react', 'react-dom', 'chartjs' ];
+        if ( $has_ocr ) {
+            $deps[] = 'tesseract';
+        }
+
+        wp_register_script( 'pit-enhanced', PIT_PLUGIN_URL . 'assets/app.js', $deps, PIT_VERSION, $script_args );
+        wp_enqueue_script( 'pit-enhanced' );
+
+        wp_localize_script( 'pit-enhanced', 'pitApp', [
+            'restUrl'   => rest_url( 'pit/v2/' ),
+            'nonce'     => wp_create_nonce( 'wp_rest' ),
+            'currentUser' => get_current_user_id(),
+            'userCan'   => [
+                'edit'   => current_user_can( 'edit_posts' ),
+                'delete' => current_user_can( 'delete_posts' ),
+                'manage' => current_user_can( 'manage_options' ),
+            ],
+            'settings' => [
+                'publicAccess'    => get_option( 'pit_public_access', false ),
+                'readOnlyMode'    => get_option( 'pit_read_only_mode', false ),
+                'defaultConfidence' => get_option( 'pit_ocr_confidence', 60 ),
+                'currency'        => get_option( 'pit_currency', '$' ),
+            ],
+            'i18n' => [
+                'dashboard'     => __( 'Dashboard', 'personal-inventory-tracker' ),
+                'inventory'     => __( 'Inventory', 'personal-inventory-tracker' ),
+                'analytics'     => __( 'Analytics', 'personal-inventory-tracker' ),
+                'scanner'       => __( 'Scanner', 'personal-inventory-tracker' ),
+                'shoppingList'  => __( 'Shopping List', 'personal-inventory-tracker' ),
+                'search'        => __( 'Search items...', 'personal-inventory-tracker' ),
+                'addItem'       => __( 'Add Item', 'personal-inventory-tracker' ),
+                'totalItems'    => __( 'Total Items', 'personal-inventory-tracker' ),
+                'lowStock'      => __( 'Low Stock', 'personal-inventory-tracker' ),
+                'outOfStock'    => __( 'Out of Stock', 'personal-inventory-tracker' ),
+                'recentPurchases' => __( 'Recent Purchases', 'personal-inventory-tracker' ),
+                'exportData'    => __( 'Export Data', 'personal-inventory-tracker' ),
+                'importData'    => __( 'Import Data', 'personal-inventory-tracker' ),
+                'scanReceipt'   => __( 'Scan Receipt', 'personal-inventory-tracker' ),
+                'categories'    => __( 'Categories', 'personal-inventory-tracker' ),
+                'confirmDelete' => __( 'Are you sure you want to delete this item?', 'personal-inventory-tracker' ),
+                'loading'       => __( 'Loading...', 'personal-inventory-tracker' ),
+                'error'         => __( 'An error occurred', 'personal-inventory-tracker' ),
+                'success'       => __( 'Operation completed successfully', 'personal-inventory-tracker' ),
+            ],
+        ] );
+    }
 }
+add_action( 'wp_enqueue_scripts', 'pit_enqueue_enhanced_frontend' );
 
 // Enhanced shortcode
 function pit_enhanced_shortcode( $atts = [] ) {
@@ -749,8 +783,6 @@ function pit_enhanced_shortcode( $atts = [] ) {
         ],
         $atts
     );
-
-    pit_enqueue_enhanced_frontend();
 
     $quick_add_notice = '';
     $read_only        = get_option( 'pit_read_only_mode', false );
