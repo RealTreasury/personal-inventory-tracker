@@ -22,8 +22,9 @@ define( 'PIT_VERSION', '2.0.0' );
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cpt.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-taxonomy.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-import-export.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-admin.php';
-require_once PIT_PLUGIN_DIR . 'includes/class-pit-reports.php';
+require_once PIT_PLUGIN_DIR . 'src/Admin/Admin.php';
+require_once PIT_PLUGIN_DIR . 'src/Reports/Reports.php';
+require_once PIT_PLUGIN_DIR . 'src/REST/Rest_Api.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
@@ -893,7 +894,7 @@ add_action('init', [PIT_Taxonomy::class, 'register']);
 add_action('plugins_loaded', [PIT_Database::class, 'migrate']);
 add_action('plugins_loaded', function() {
     pit_init_enhanced();
-    (new PIT_Admin())->init();
+    ( new \PIT\Admin\Admin() )->init();
     PIT_Cron::init();
 });
 

@@ -1,9 +1,11 @@
 <?php
+namespace PIT\REST;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_REST {
+class Rest_Api {
 
     protected function verify_nonce( $request ) {
         $nonce = $request->get_header( 'X-WP-Nonce' );
@@ -182,7 +184,7 @@ class PIT_REST {
             '/recommendations/refresh',
             array(
                 'methods'             => WP_REST_Server::CREATABLE,
-                'callback'            => array( 'PIT_Cron', 'refresh_recommendations' ),
+                'callback'            => array( '\PIT_Cron', 'refresh_recommendations' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
             )
         );
@@ -365,11 +367,11 @@ class PIT_REST {
     public function export_items( $request ) {
         $format = sanitize_key( $request->get_param( 'format' ) );
         if ( 'csv' === $format ) {
-            $csv = PIT_Import_Export::generate_csv();
+            $csv = \PIT_Import_Export::generate_csv();
             return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
         }
         if ( 'pdf' === $format ) {
-            $pdf = PIT_Import_Export::generate_pdf();
+            $pdf = \PIT_Import_Export::generate_pdf();
             return new WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
         }
         return $this->get_items( $request );
