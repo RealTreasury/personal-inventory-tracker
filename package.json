@@ -64,10 +64,11 @@
     "not ie <= 11"
   ],
   "dependencies": {
+    "chart.js": "^4.5.0",
     "esbuild": "^0.25.9",
     "lucide-react": "^0.541.0",
-    "tesseract.js": "^6.0.1",
-    "papaparse": "^5.4.1"
+    "papaparse": "^5.4.1",
+    "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.22.0",
