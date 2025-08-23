@@ -43,8 +43,10 @@ function add_action( $hook, $callback ) {
 function get_post_type( $post_id ) {
     return 'pit_item';
 }
-class PIT_Cache {
-    public static function clear_inventory_caches() {}
+if ( ! class_exists( 'PIT_Cache' ) ) {
+    class PIT_Cache {
+        public static function clear_inventory_caches() {}
+    }
 }
 
 class WP_Error {
@@ -53,8 +55,9 @@ class WP_Error {
         $this->errors[ $code ] = $message;
     }
 }
-
-define( 'ABSPATH', __DIR__ );
+if ( ! defined( 'ABSPATH' ) ) {
+    define( 'ABSPATH', __DIR__ );
+}
 require_once __DIR__ . '/../pit-functions.php';
 
 use PHPUnit\Framework\TestCase;
