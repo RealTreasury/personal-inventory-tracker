@@ -13,5 +13,10 @@
     },
     "scripts": {
         "phpstan": "phpstan analyse"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
     }
 }
