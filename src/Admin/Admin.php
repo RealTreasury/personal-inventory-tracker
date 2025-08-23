@@ -1,7 +1,8 @@
 <?php
-namespace PIT\Admin;
 
-use PIT\Reports\Reports;
+namespace RealTreasury\Inventory\Admin;
+
+use RealTreasury\Inventory\Reports\Reports;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -58,8 +59,7 @@ class Admin {
             );
         }
 
-        require_once PIT_PLUGIN_DIR . 'includes/class-pit-list-table.php';
-        $list_table = new \PIT_List_Table();
+        $list_table = new \RealTreasury\Inventory\List_Table();
         $list_table->process_bulk_action();
         $list_table->prepare_items();
 
@@ -454,3 +454,5 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\Admin', 'PIT\\Admin\\Admin' );

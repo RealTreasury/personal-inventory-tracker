@@ -1,9 +1,12 @@
 <?php
+
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_CPT {
+class CPT {
 
     public static function register() {
         register_post_type(
@@ -31,3 +34,5 @@ class PIT_CPT {
         flush_rewrite_rules();
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\CPT', 'PIT_CPT' );

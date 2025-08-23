@@ -160,7 +160,7 @@ function pit_esc_html( $text ) {
  */
 function pit_clear_summary_cache( $post_id ) {
     if ( 'pit_item' === get_post_type( $post_id ) ) {
-        PIT_Cache::delete( 'pit_reco_summary' );
+        \RealTreasury\Inventory\Cache::delete( 'pit_reco_summary' );
     }
 }
 

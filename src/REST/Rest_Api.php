@@ -1,5 +1,6 @@
 <?php
-namespace PIT\REST;
+
+namespace RealTreasury\Inventory\REST;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -16,7 +17,7 @@ class Rest_Api {
             $_REQUEST['_wpnonce'] = $nonce;
         }
         if ( false === check_ajax_referer( 'wp_rest', '_wpnonce', false ) ) {
-            return new WP_Error( 'pit_invalid_nonce', __( 'Invalid nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+            return new \WP_Error( 'pit_invalid_nonce', __( 'Invalid nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
         return true;
     }
@@ -50,13 +51,13 @@ class Rest_Api {
             '/items',
             array(
                 array(
-                    'methods'             => WP_REST_Server::READABLE,
+                    'methods'             => \WP_REST_Server::READABLE,
                     'callback'            => array( $this, 'get_items' ),
                     'permission_callback' => array( $this, 'permissions_read' ),
                     'schema'              => array( $this, 'get_item_schema' ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::CREATABLE,
+                    'methods'             => \WP_REST_Server::CREATABLE,
                     'callback'            => array( $this, 'create_item' ),
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
@@ -83,7 +84,7 @@ class Rest_Api {
             '/items/(?P<id>\d+)',
             array(
                 array(
-                    'methods'             => WP_REST_Server::EDITABLE,
+                    'methods'             => \WP_REST_Server::EDITABLE,
                     'callback'            => array( $this, 'update_item' ),
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
@@ -104,7 +105,7 @@ class Rest_Api {
                     'schema'              => array( $this, 'get_item_schema' ),
                 ),
                 array(
-                    'methods'             => WP_REST_Server::DELETABLE,
+                    'methods'             => \WP_REST_Server::DELETABLE,
                     'callback'            => array( $this, 'delete_item' ),
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
@@ -121,7 +122,7 @@ class Rest_Api {
             'pit/v1',
             '/items/batch',
             array(
-                'methods'             => WP_REST_Server::EDITABLE,
+                'methods'             => \WP_REST_Server::EDITABLE,
                 'callback'            => array( $this, 'batch_update_items' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
                 'args'                => array(
@@ -141,7 +142,7 @@ class Rest_Api {
             'pit/v1',
             '/items/import',
             array(
-                'methods'             => WP_REST_Server::CREATABLE,
+                'methods'             => \WP_REST_Server::CREATABLE,
                 'callback'            => array( $this, 'import_items' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
                 'args'                => array(
@@ -165,7 +166,7 @@ class Rest_Api {
             'pit/v1',
             '/export',
             array(
-                'methods'             => WP_REST_Server::READABLE,
+                'methods'             => \WP_REST_Server::READABLE,
                 'callback'            => array( $this, 'export_items' ),
                 'permission_callback' => array( $this, 'permissions_read' ),
                 'args'                => array(
@@ -183,8 +184,8 @@ class Rest_Api {
             'pit/v1',
             '/recommendations/refresh',
             array(
-                'methods'             => WP_REST_Server::CREATABLE,
-                'callback'            => array( '\PIT_Cron', 'refresh_recommendations' ),
+                'methods'             => \WP_REST_Server::CREATABLE,
+                'callback'            => array( '\RealTreasury\Inventory\Cron', 'refresh_recommendations' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
             )
         );
@@ -204,7 +205,7 @@ class Rest_Api {
             return $nonce;
         }
         if ( get_option( 'pit_read_only' ) ) {
-            return new WP_Error( 'pit_read_only', __( 'Read-only mode enabled.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+            return new \WP_Error( 'pit_read_only', __( 'Read-only mode enabled.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
         return current_user_can( 'manage_inventory_items' );
     }
@@ -367,12 +368,12 @@ class Rest_Api {
     public function export_items( $request ) {
         $format = sanitize_key( $request->get_param( 'format' ) );
         if ( 'csv' === $format ) {
-            $csv = \PIT_Import_Export::generate_csv();
-            return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
+            $csv = \RealTreasury\Inventory\Import_Export::generate_csv();
+            return new \WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
         }
         if ( 'pdf' === $format ) {
-            $pdf = \PIT_Import_Export::generate_pdf();
-            return new WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
+            $pdf = \RealTreasury\Inventory\Import_Export::generate_pdf();
+            return new \WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
         }
         return $this->get_items( $request );
     }
@@ -405,9 +406,11 @@ class Rest_Api {
         $deleted = wp_trash_post( $id );
 
         if ( ! $deleted ) {
-            return new WP_Error( 'pit_not_deleted', __( 'Unable to delete item.', 'personal-inventory-tracker' ), array( 'status' => 500 ) );
+            return new \WP_Error( 'pit_not_deleted', __( 'Unable to delete item.', 'personal-inventory-tracker' ), array( 'status' => 500 ) );
         }
 
         return rest_ensure_response( true );
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\Rest_Api', 'PIT\\REST\\Rest_Api' );

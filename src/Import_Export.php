@@ -1,9 +1,12 @@
 <?php
+
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Import_Export {
+class Import_Export {
 
     public static function get_headers() {
         return array(
@@ -136,7 +139,7 @@ class PIT_Import_Export {
             'pit/v1',
             '/export',
             array(
-                'methods'             => WP_REST_Server::READABLE,
+                'methods'             => \WP_REST_Server::READABLE,
                 'callback'            => array( __CLASS__, 'rest_export' ),
                 'permission_callback' => function() {
                     return current_user_can( 'manage_inventory_items' );
@@ -147,7 +150,7 @@ class PIT_Import_Export {
             'pit/v1',
             '/import',
             array(
-                'methods'             => WP_REST_Server::CREATABLE,
+                'methods'             => \WP_REST_Server::CREATABLE,
                 'callback'            => array( __CLASS__, 'rest_import' ),
                 'permission_callback' => function() {
                     return current_user_can( 'manage_inventory_items' );
@@ -156,15 +159,15 @@ class PIT_Import_Export {
         );
     }
 
-    public static function rest_export( WP_REST_Request $request ) {
+    public static function rest_export( \WP_REST_Request $request ) {
         $csv = self::generate_csv();
-        return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
+        return new \WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
     }
 
-    public static function rest_import( WP_REST_Request $request ) {
+    public static function rest_import( \WP_REST_Request $request ) {
         $csv = $request->get_param( 'csv' );
         if ( empty( $csv ) ) {
-            return new WP_Error( 'pit_no_csv', __( 'No CSV data supplied.', 'personal-inventory-tracker' ), array( 'status' => 400 ) );
+            return new \WP_Error( 'pit_no_csv', __( 'No CSV data supplied.', 'personal-inventory-tracker' ), array( 'status' => 400 ) );
         }
         $csv     = wp_unslash( $csv );
         $lines   = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
@@ -182,3 +185,5 @@ class PIT_Import_Export {
         return rest_ensure_response( true );
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\Import_Export', 'PIT_Import_Export' );

@@ -1,9 +1,12 @@
 <?php
+
+namespace RealTreasury\Inventory;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-class PIT_Taxonomy {
+class Taxonomy {
 
     public static function register() {
         register_taxonomy(
@@ -31,3 +34,5 @@ class PIT_Taxonomy {
         flush_rewrite_rules();
     }
 }
+
+\class_alias( __NAMESPACE__ . '\\Taxonomy', 'PIT_Taxonomy' );
