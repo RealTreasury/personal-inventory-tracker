@@ -176,7 +176,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
       for (let i = 0; i < mappedData.length; i += batchSize) {
         const batch = mappedData.slice(i, i + batchSize);
         try {
-          const response = await fetch(`${window.pitApp?.restUrl}items/import`, {
+          const response = await fetch(`${window.pitApp?.restUrl}import`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
