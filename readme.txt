@@ -35,11 +35,20 @@ Personal Inventory Tracker helps households keep track of items using a custom p
 == Quick Start ==
 1. Prepare a CSV file with your inventory (see format below or `docs/sample.csv`).
 2. Import the CSV via the Personal Inventory admin page or add items manually.
-3. Add the `[personal_inventory]` shortcode to a page.
+3. Add one of the following shortcodes to a page to display the inventory interface:
+   `[personal_inventory]`, `[pit_enhanced]`, `[pit_dashboard]`, or `[pit_app]` (deprecated).
 4. Choose your front-end mode:
    * **Read-only:** inventory is displayed but cannot be changed.
    * **Write:** authenticated users can modify inventory via the REST API.
 5. Use the OCR tool to scan receipts and pre-fill item fields.
+
+== Shortcodes ==
+The plugin registers several shortcodes that render the same inventory interface:
+
+* `[personal_inventory]`
+* `[pit_enhanced]`
+* `[pit_dashboard]`
+* `[pit_app]` (deprecated)
 
 == CSV Format ==
 Each row represents one inventory item. Columns include `post_title`, `qty`, `reorder_threshold`, `reorder_interval`, and `last_reordered` (Unix timestamp).

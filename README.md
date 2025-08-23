@@ -25,11 +25,20 @@ Personal Inventory Tracker is a WordPress plugin that helps you manage household
 ## Quick Start
 1. Prepare a CSV file with your items in the format below.
 2. In the WordPress admin, navigate to Personal Inventory and import the CSV or add items manually.
-3. Place the `[personal_inventory]` shortcode on a page to display inventory.
+3. Place one of the following shortcodes on a page to display the inventory interface:
+   `[personal_inventory]`, `[pit_enhanced]`, `[pit_dashboard]`, or `[pit_app]` (deprecated).
 4. Choose a front-end mode:
    - **Read-only:** visitors can view inventory but cannot modify data.
    - **Write:** authenticated users can update quantities or add items via the REST API.
 5. Use the OCR widget to scan receipts and pre-fill item fields.
+
+## Shortcodes
+The plugin registers several shortcodes that render the same inventory interface:
+
+- `[personal_inventory]`
+- `[pit_enhanced]`
+- `[pit_dashboard]`
+- `[pit_app]` *(deprecated)*
 
 ## CSV Format
 Each row represents an inventory item with the following columns:
