@@ -30,10 +30,14 @@ class PIT_Cache {
      * @return mixed Cached value.
      */
     public static function get_or_set( string $key, callable $callback, int $expiration = HOUR_IN_SECONDS ) {
-        $value = get_transient( $key );
+        $sentinel = '__pit_cache_false__';
+        $value    = get_transient( $key );
+
         if ( false === $value ) {
             $value = call_user_func( $callback );
-            set_transient( $key, $value, $expiration );
+            set_transient( $key, false === $value ? $sentinel : $value, $expiration );
+        } elseif ( $sentinel === $value ) {
+            $value = false;
         }
 
         return $value;
