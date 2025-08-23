@@ -30,6 +30,9 @@ export function parseCSV(file, defaultMappings) {
               mapping[field] = header;
             }
           });
+          if (lowerHeader.startsWith('meta_')) {
+            mapping[header] = header;
+          }
         });
         resolve({ data, mapping });
       } catch (err) {

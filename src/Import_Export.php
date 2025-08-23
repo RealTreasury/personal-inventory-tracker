@@ -19,6 +19,7 @@ class Import_Export {
             'estimated_interval_days',
             'last_purchased',
             'notes',
+            'image_url',
         );
     }
 
@@ -34,9 +35,6 @@ class Import_Export {
     }
 
     public static function generate_csv( $item_ids = array() ) {
-        $fh = fopen( 'php://temp', 'w+' );
-        fputcsv( $fh, self::get_headers() );
-
         $args = array(
             'post_type'      => 'pit_item',
             'posts_per_page' => -1,
@@ -46,23 +44,48 @@ class Import_Export {
             $args['post__in'] = $item_ids;
         }
         $posts = get_posts( $args );
+
+        $extra_meta = array();
+        foreach ( $posts as $post ) {
+            $meta = get_post_meta( $post->ID );
+            foreach ( $meta as $key => $values ) {
+                if ( 0 === strpos( $key, 'pit_meta_' ) ) {
+                    $extra_meta[] = substr( $key, 9 );
+                }
+            }
+        }
+        $extra_meta = array_unique( $extra_meta );
+        $headers    = array_merge( self::get_headers(), array_map( function( $k ) {
+            return 'meta_' . $k;
+        }, $extra_meta ) );
+
+        $fh = fopen( 'php://temp', 'w+' );
+        fputcsv( $fh, $headers );
+
         foreach ( $posts as $post ) {
             $category = wp_get_post_terms( $post->ID, 'pit_category', array( 'fields' => 'slugs' ) );
-            $row      = array(
-                $post->ID,
-                $post->post_title,
-                $category ? $category[0] : '',
-                get_post_meta( $post->ID, 'pit_qty', true ),
-                get_post_meta( $post->ID, 'pit_unit', true ),
-                get_post_meta( $post->ID, 'pit_threshold', true ),
-                get_post_meta( $post->ID, 'pit_interval', true ),
-                get_post_meta( $post->ID, 'pit_last_purchased', true ),
-                get_post_meta( $post->ID, 'pit_notes', true ),
+            $data     = array(
+                'id'                      => $post->ID,
+                'name'                    => $post->post_title,
+                'category_slug'           => $category ? $category[0] : '',
+                'qty'                     => get_post_meta( $post->ID, 'pit_qty', true ),
+                'unit'                    => get_post_meta( $post->ID, 'pit_unit', true ),
+                'reorder_threshold'       => get_post_meta( $post->ID, 'pit_threshold', true ),
+                'estimated_interval_days' => get_post_meta( $post->ID, 'pit_interval', true ),
+                'last_purchased'          => get_post_meta( $post->ID, 'pit_last_purchased', true ),
+                'notes'                   => get_post_meta( $post->ID, 'pit_notes', true ),
+                'image_url'               => get_the_post_thumbnail_url( $post->ID, 'full' ),
             );
-            foreach ( $row as &$value ) {
+            foreach ( $extra_meta as $meta_key ) {
+                $data[ 'meta_' . $meta_key ] = get_post_meta( $post->ID, 'pit_meta_' . $meta_key, true );
+            }
+            $row = array();
+            foreach ( $headers as $header ) {
+                $value = isset( $data[ $header ] ) ? $data[ $header ] : '';
                 if ( is_string( $value ) ) {
                     $value = wp_unslash( $value );
                 }
+                $row[] = $value;
             }
             fputcsv( $fh, $row );
         }
@@ -84,9 +107,9 @@ class Import_Export {
         $lines = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
         foreach ( $lines as $line ) {
             $data = array();
-            foreach ( self::get_headers() as $field ) {
-                if ( isset( $mapping[ $field ] ) && isset( $line[ $mapping[ $field ] ] ) ) {
-                    $data[ $field ] = sanitize_text_field( $line[ $mapping[ $field ] ] );
+            foreach ( $mapping as $field => $index ) {
+                if ( isset( $line[ $index ] ) ) {
+                    $data[ $field ] = sanitize_text_field( $line[ $index ] );
                 }
             }
             if ( empty( $data['name'] ) ) {
@@ -130,6 +153,22 @@ class Import_Export {
             }
             if ( isset( $data['notes'] ) ) {
                 update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $data['notes'] ) );
+            }
+            if ( isset( $data['image_url'] ) && $data['image_url'] ) {
+                if ( ! function_exists( 'media_sideload_image' ) ) {
+                    require_once ABSPATH . 'wp-admin/includes/media.php';
+                    require_once ABSPATH . 'wp-admin/includes/file.php';
+                    require_once ABSPATH . 'wp-admin/includes/image.php';
+                }
+                $image_id = media_sideload_image( esc_url_raw( $data['image_url'] ), $id, null, 'id' );
+                if ( ! is_wp_error( $image_id ) ) {
+                    set_post_thumbnail( $id, $image_id );
+                }
+            }
+            foreach ( $data as $key => $value ) {
+                if ( 0 === strpos( $key, 'meta_' ) ) {
+                    update_post_meta( $id, 'pit_' . $key, sanitize_text_field( $value ) );
+                }
             }
         }
     }

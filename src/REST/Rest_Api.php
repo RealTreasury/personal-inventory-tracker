@@ -402,10 +402,55 @@ class Rest_Api {
                 }
 
                 if ( isset( $item['qty'] ) ) {
-                    update_post_meta( $id, 'qty', (int) $item['qty'] );
+                    update_post_meta( $id, 'pit_qty', (int) $item['qty'] );
+                }
+                if ( isset( $item['unit'] ) ) {
+                    update_post_meta( $id, 'pit_unit', sanitize_text_field( $item['unit'] ) );
+                }
+                if ( isset( $item['threshold'] ) ) {
+                    update_post_meta( $id, 'pit_threshold', (int) $item['threshold'] );
+                }
+                if ( isset( $item['reorder_threshold'] ) ) {
+                    update_post_meta( $id, 'pit_threshold', (int) $item['reorder_threshold'] );
+                }
+                if ( isset( $item['estimated_interval_days'] ) ) {
+                    update_post_meta( $id, 'pit_interval', (int) $item['estimated_interval_days'] );
+                }
+                if ( isset( $item['last_purchased'] ) ) {
+                    update_post_meta( $id, 'pit_last_purchased', sanitize_text_field( $item['last_purchased'] ) );
+                }
+                if ( isset( $item['notes'] ) ) {
+                    update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $item['notes'] ) );
                 }
                 if ( isset( $item['purchased'] ) ) {
                     update_post_meta( $id, 'purchased', ! empty( $item['purchased'] ) );
+                }
+                if ( isset( $item['category'] ) ) {
+                    $slug = sanitize_title( $item['category'] );
+                    $term = get_term_by( 'slug', $slug, 'pit_category' );
+                    if ( ! $term ) {
+                        $term = wp_insert_term( $slug, 'pit_category', array( 'slug' => $slug ) );
+                    }
+                    if ( ! is_wp_error( $term ) ) {
+                        $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
+                        wp_set_post_terms( $id, array( $term_id ), 'pit_category', false );
+                    }
+                }
+                if ( isset( $item['image_url'] ) && $item['image_url'] ) {
+                    if ( ! function_exists( 'media_sideload_image' ) ) {
+                        require_once ABSPATH . 'wp-admin/includes/media.php';
+                        require_once ABSPATH . 'wp-admin/includes/file.php';
+                        require_once ABSPATH . 'wp-admin/includes/image.php';
+                    }
+                    $image_id = media_sideload_image( esc_url_raw( $item['image_url'] ), $id, null, 'id' );
+                    if ( ! is_wp_error( $image_id ) ) {
+                        set_post_thumbnail( $id, $image_id );
+                    }
+                }
+                foreach ( $item as $key => $value ) {
+                    if ( 0 === strpos( $key, 'meta_' ) ) {
+                        update_post_meta( $id, 'pit_' . $key, sanitize_text_field( $value ) );
+                    }
                 }
                 $imported++;
             }
