@@ -13,12 +13,22 @@ class Rest_Api {
         if ( ! $nonce ) {
             $nonce = $request->get_param( '_wpnonce' );
         }
-        if ( $nonce ) {
-            $_REQUEST['_wpnonce'] = $nonce;
-        }
-        if ( false === check_ajax_referer( 'wp_rest', '_wpnonce', false ) ) {
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
             return new \WP_Error( 'pit_invalid_nonce', __( 'Invalid nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
+        return true;
+    }
+
+    protected function check_rate_limit( $request ) {
+        $user_id = get_current_user_id();
+        $key     = $user_id ? 'pit_rate_' . $user_id : 'pit_rate_' . md5( $_SERVER['REMOTE_ADDR'] ?? '' );
+        $count   = (int) get_transient( $key );
+
+        if ( $count >= 100 ) {
+            return new \WP_Error( 'pit_rate_limited', __( 'Too many requests.', 'personal-inventory-tracker' ), array( 'status' => 429 ) );
+        }
+
+        set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
         return true;
     }
 
@@ -62,16 +72,22 @@ class Rest_Api {
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
                         'title'     => array(
-                            'type'     => 'string',
-                            'required' => true,
+                            'type'              => 'string',
+                            'required'          => true,
+                            'sanitize_callback' => 'sanitize_text_field',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'qty'       => array(
-                            'type'    => 'integer',
-                            'default' => 0,
+                            'type'              => 'integer',
+                            'default'           => 0,
+                            'sanitize_callback' => 'absint',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'purchased' => array(
-                            'type'    => 'boolean',
-                            'default' => false,
+                            'type'              => 'boolean',
+                            'default'           => false,
+                            'sanitize_callback' => 'rest_sanitize_boolean',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                     ),
                     'schema'              => array( $this, 'get_item_schema' ),
@@ -89,17 +105,25 @@ class Rest_Api {
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
                         'id'        => array(
-                            'type'     => 'integer',
-                            'required' => true,
+                            'type'              => 'integer',
+                            'required'          => true,
+                            'sanitize_callback' => 'absint',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'title'     => array(
-                            'type' => 'string',
+                            'type'              => 'string',
+                            'sanitize_callback' => 'sanitize_text_field',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'qty'       => array(
-                            'type' => 'integer',
+                            'type'              => 'integer',
+                            'sanitize_callback' => 'absint',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                         'purchased' => array(
-                            'type' => 'boolean',
+                            'type'              => 'boolean',
+                            'sanitize_callback' => 'rest_sanitize_boolean',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                     ),
                     'schema'              => array( $this, 'get_item_schema' ),
@@ -110,8 +134,10 @@ class Rest_Api {
                     'permission_callback' => array( $this, 'permissions_write' ),
                     'args'                => array(
                         'id' => array(
-                            'type'     => 'integer',
-                            'required' => true,
+                            'type'              => 'integer',
+                            'required'          => true,
+                            'sanitize_callback' => 'absint',
+                            'validate_callback' => 'rest_validate_request_arg',
                         ),
                     ),
                 ),
@@ -127,9 +153,11 @@ class Rest_Api {
                 'permission_callback' => array( $this, 'permissions_write' ),
                 'args'                => array(
                     'items' => array(
-                        'type'     => 'array',
-                        'required' => true,
-                        'items'    => array(
+                        'type'              => 'array',
+                        'required'          => true,
+                        'validate_callback' => 'rest_validate_request_arg',
+                        'sanitize_callback' => 'wp_unslash',
+                        'items'             => array(
                             'type' => 'object',
                         ),
                     ),
@@ -146,16 +174,20 @@ class Rest_Api {
                 'callback'            => array( $this, 'import_items' ),
                 'permission_callback' => array( $this, 'permissions_write' ),
                 'args'                => array(
-                    'items' => array(
-                        'type'     => 'array',
-                        'required' => true,
-                        'items'    => array(
+                    'items'    => array(
+                        'type'              => 'array',
+                        'required'          => true,
+                        'validate_callback' => 'rest_validate_request_arg',
+                        'sanitize_callback' => 'wp_unslash',
+                        'items'             => array(
                             'type' => 'object',
                         ),
                     ),
                     'settings' => array(
-                        'type'    => 'object',
-                        'required' => false,
+                        'type'              => 'object',
+                        'required'          => false,
+                        'validate_callback' => 'rest_validate_request_arg',
+                        'sanitize_callback' => 'wp_unslash',
                     ),
                 ),
                 'schema'              => array( $this, 'get_item_schema' ),
@@ -171,9 +203,11 @@ class Rest_Api {
                 'permission_callback' => array( $this, 'permissions_read' ),
                 'args'                => array(
                     'format' => array(
-                        'type'    => 'string',
-                        'default' => 'json',
-                        'enum'    => array( 'json', 'csv', 'pdf' ),
+                        'type'              => 'string',
+                        'default'           => 'json',
+                        'enum'              => array( 'json', 'csv', 'pdf' ),
+                        'sanitize_callback' => 'sanitize_key',
+                        'validate_callback' => 'rest_validate_request_arg',
                     ),
                 ),
                 'schema'              => array( $this, 'get_item_schema' ),
@@ -196,7 +230,17 @@ class Rest_Api {
         if ( true !== $nonce ) {
             return $nonce;
         }
-        return current_user_can( 'view_inventory' );
+
+        $limit = $this->check_rate_limit( $request );
+        if ( true !== $limit ) {
+            return $limit;
+        }
+
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            return new \WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to manage inventory items.', 'personal-inventory-tracker' ), array( 'status' => rest_authorization_required_code() ) );
+        }
+
+        return true;
     }
 
     public function permissions_write( $request ) {
@@ -204,10 +248,21 @@ class Rest_Api {
         if ( true !== $nonce ) {
             return $nonce;
         }
+
+        $limit = $this->check_rate_limit( $request );
+        if ( true !== $limit ) {
+            return $limit;
+        }
+
         if ( get_option( 'pit_read_only' ) ) {
             return new \WP_Error( 'pit_read_only', __( 'Read-only mode enabled.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
-        return current_user_can( 'manage_inventory_items' );
+
+        if ( ! current_user_can( 'manage_inventory_items' ) ) {
+            return new \WP_Error( 'rest_forbidden', __( 'Sorry, you are not allowed to manage inventory items.', 'personal-inventory-tracker' ), array( 'status' => rest_authorization_required_code() ) );
+        }
+
+        return true;
     }
 
     protected function prepare_item( $post ) {
