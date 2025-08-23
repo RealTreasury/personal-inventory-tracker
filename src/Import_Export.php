@@ -24,75 +24,108 @@ class Import_Export {
     }
 
     public static function output_csv( $item_ids = array() ) {
-        $csv = self::generate_csv( $item_ids );
         if ( headers_sent() ) {
             return;
         }
         header( 'Content-Type: text/csv; charset=utf-8' );
         header( 'Content-Disposition: attachment;filename=pit-items.csv' );
-        echo $csv;
+        $fh = fopen( 'php://output', 'w' );
+        self::generate_csv( $item_ids, $fh );
+        fclose( $fh );
         exit;
     }
 
-    public static function generate_csv( $item_ids = array() ) {
-        $args = array(
+    public static function generate_csv( $item_ids = array(), $stream = null ) {
+        $per_page = 500;
+        $args     = array(
             'post_type'      => 'pit_item',
-            'posts_per_page' => -1,
+            'posts_per_page' => $per_page,
             'post_status'    => 'any',
+            'fields'         => 'ids',
         );
         if ( ! empty( $item_ids ) ) {
             $args['post__in'] = $item_ids;
         }
-        $posts = get_posts( $args );
 
         $extra_meta = array();
-        foreach ( $posts as $post ) {
-            $meta = get_post_meta( $post->ID );
-            foreach ( $meta as $key => $values ) {
-                if ( 0 === strpos( $key, 'pit_meta_' ) ) {
-                    $extra_meta[] = substr( $key, 9 );
+        $paged      = 1;
+        do {
+            $args['paged'] = $paged;
+            $ids          = get_posts( $args );
+            if ( empty( $ids ) ) {
+                break;
+            }
+            foreach ( $ids as $id ) {
+                $meta = get_post_meta( $id );
+                foreach ( $meta as $key => $values ) {
+                    if ( 0 === strpos( $key, 'pit_meta_' ) ) {
+                        $extra_meta[] = substr( $key, 9 );
+                    }
                 }
             }
-        }
+            $paged++;
+        } while ( count( $ids ) === $per_page );
+
         $extra_meta = array_unique( $extra_meta );
         $headers    = array_merge( self::get_headers(), array_map( function( $k ) {
             return 'meta_' . $k;
         }, $extra_meta ) );
 
-        $fh = fopen( 'php://temp', 'w+' );
+        $fh    = $stream;
+        $close = false;
+        if ( ! is_resource( $fh ) ) {
+            $fh    = fopen( 'php://temp', 'w+' );
+            $close = true;
+        }
+
         fputcsv( $fh, $headers );
 
-        foreach ( $posts as $post ) {
-            $category = wp_get_post_terms( $post->ID, 'pit_category', array( 'fields' => 'slugs' ) );
-            $data     = array(
-                'id'                      => $post->ID,
-                'name'                    => $post->post_title,
-                'category_slug'           => $category ? $category[0] : '',
-                'qty'                     => get_post_meta( $post->ID, 'pit_qty', true ),
-                'unit'                    => get_post_meta( $post->ID, 'pit_unit', true ),
-                'reorder_threshold'       => get_post_meta( $post->ID, 'pit_threshold', true ),
-                'estimated_interval_days' => get_post_meta( $post->ID, 'pit_interval', true ),
-                'last_purchased'          => get_post_meta( $post->ID, 'pit_last_purchased', true ),
-                'notes'                   => get_post_meta( $post->ID, 'pit_notes', true ),
-                'image_url'               => get_the_post_thumbnail_url( $post->ID, 'full' ),
-            );
-            foreach ( $extra_meta as $meta_key ) {
-                $data[ 'meta_' . $meta_key ] = get_post_meta( $post->ID, 'pit_meta_' . $meta_key, true );
+        $args['fields'] = 'all';
+        $paged          = 1;
+        do {
+            $args['paged'] = $paged;
+            $posts         = get_posts( $args );
+            if ( empty( $posts ) ) {
+                break;
             }
-            $row = array();
-            foreach ( $headers as $header ) {
-                $value = isset( $data[ $header ] ) ? $data[ $header ] : '';
-                if ( is_string( $value ) ) {
-                    $value = wp_unslash( $value );
+            foreach ( $posts as $post ) {
+                $category = wp_get_post_terms( $post->ID, 'pit_category', array( 'fields' => 'slugs' ) );
+                $data     = array(
+                    'id'                      => $post->ID,
+                    'name'                    => $post->post_title,
+                    'category_slug'           => $category ? $category[0] : '',
+                    'qty'                     => get_post_meta( $post->ID, 'pit_qty', true ),
+                    'unit'                    => get_post_meta( $post->ID, 'pit_unit', true ),
+                    'reorder_threshold'       => get_post_meta( $post->ID, 'pit_threshold', true ),
+                    'estimated_interval_days' => get_post_meta( $post->ID, 'pit_interval', true ),
+                    'last_purchased'          => get_post_meta( $post->ID, 'pit_last_purchased', true ),
+                    'notes'                   => get_post_meta( $post->ID, 'pit_notes', true ),
+                    'image_url'               => get_the_post_thumbnail_url( $post->ID, 'full' ),
+                );
+                foreach ( $extra_meta as $meta_key ) {
+                    $data[ 'meta_' . $meta_key ] = get_post_meta( $post->ID, 'pit_meta_' . $meta_key, true );
                 }
-                $row[] = $value;
+                $row = array();
+                foreach ( $headers as $header ) {
+                    $value = isset( $data[ $header ] ) ? $data[ $header ] : '';
+                    if ( is_string( $value ) ) {
+                        $value = wp_unslash( $value );
+                    }
+                    $row[] = $value;
+                }
+                fputcsv( $fh, $row );
             }
-            fputcsv( $fh, $row );
+            $paged++;
+        } while ( count( $posts ) === $per_page );
+
+        if ( $close ) {
+            rewind( $fh );
+            $csv = stream_get_contents( $fh );
+            fclose( $fh );
+            return $csv;
         }
-        rewind( $fh );
-        $csv = stream_get_contents( $fh );
-        fclose( $fh );
-        return $csv;
+
+        return '';
     }
 
     public static function generate_pdf( $item_ids = array() ) {
