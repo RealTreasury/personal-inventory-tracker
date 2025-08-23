@@ -25,6 +25,7 @@ class PIT_Admin {
         add_submenu_page( 'pit_dashboard', __( 'Import/Export', 'personal-inventory-tracker' ), __( 'Import/Export', 'personal-inventory-tracker' ), $cap, 'pit_import_export', array( $this, 'import_export_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'OCR Receipt', 'personal-inventory-tracker' ), __( 'OCR Receipt', 'personal-inventory-tracker' ), $cap, 'pit_ocr_receipt', array( $this, 'ocr_receipt_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Shopping List', 'personal-inventory-tracker' ), __( 'Shopping List', 'personal-inventory-tracker' ), $cap, 'pit_shopping_list', array( $this, 'shopping_list_page' ) );
+        add_submenu_page( 'pit_dashboard', __( 'Analytics', 'personal-inventory-tracker' ), __( 'Analytics', 'personal-inventory-tracker' ), $cap, 'pit_analytics', array( $this, 'analytics_page' ) );
     }
 
     public function dashboard_page() {
@@ -281,6 +282,22 @@ document.addEventListener('DOMContentLoaded',function(){
             'settings' => array(
                 'currency' => get_option( 'pit_currency', '$' ),
             ),
+        ) );
+    }
+
+    public function analytics_page() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        echo '<div class="wrap"><h1>' . esc_html__( 'Analytics', 'personal-inventory-tracker' ) . '</h1>';
+        include PIT_PLUGIN_DIR . 'templates/analytics.php';
+        echo '</div>';
+
+        wp_enqueue_script( 'pit-analytics', PIT_PLUGIN_URL . 'assets/analytics.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
+        wp_localize_script( 'pit-analytics', 'pitApp', array(
+            'restUrl' => esc_url_raw( rest_url( 'pit/v2/' ) ),
+            'nonce'   => wp_create_nonce( 'wp_rest' ),
         ) );
     }
     public function ocr_receipt_page() {
