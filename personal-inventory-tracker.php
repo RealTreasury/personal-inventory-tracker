@@ -20,6 +20,7 @@ require_once PIT_PLUGIN_DIR . 'includes/class-pit-cpt.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-taxonomy.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-rest.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-admin.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-reports.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
