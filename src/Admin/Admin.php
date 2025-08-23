@@ -25,7 +25,6 @@ class Admin {
     public function register_menu() {
         $cap = 'manage_inventory_items';
         add_menu_page( __( 'Inventory (PIT)', 'personal-inventory-tracker' ), __( 'Inventory (PIT)', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ), 'dashicons-archive', 26 );
-        add_submenu_page( 'pit_dashboard', __( 'Dashboard', 'personal-inventory-tracker' ), __( 'Dashboard', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Items', 'personal-inventory-tracker' ), __( 'Items', 'personal-inventory-tracker' ), $cap, 'pit_items', array( $this, 'items_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Add/Edit Item', 'personal-inventory-tracker' ), __( 'Add/Edit Item', 'personal-inventory-tracker' ), $cap, 'pit_add_item', array( $this, 'add_item_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Import/Export', 'personal-inventory-tracker' ), __( 'Import/Export', 'personal-inventory-tracker' ), $cap, 'pit_import_export', array( $this, 'import_export_page' ) );
