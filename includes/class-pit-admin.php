@@ -232,8 +232,72 @@ class PIT_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
+        if ( isset( $_GET['pit_export'] ) ) {
+            check_admin_referer( 'pit_export_all' );
+            PIT_Import_Export::output_csv();
+        }
+
         echo '<div class="wrap"><h1>' . esc_html__( 'Import/Export', 'personal-inventory-tracker' ) . '</h1>';
-        echo '<p>' . esc_html__( 'Export and import inventory items via CSV.', 'personal-inventory-tracker' ) . '</p>';
+
+        if ( isset( $_POST['pit_import_step'] ) && 'process' === $_POST['pit_import_step'] ) {
+            check_admin_referer( 'pit_import_process' );
+            $csv     = base64_decode( sanitize_text_field( wp_unslash( $_POST['pit_import_csv'] ) ) );
+            $mapping = array();
+            foreach ( PIT_Import_Export::get_headers() as $field ) {
+                if ( isset( $_POST['mapping'][ $field ] ) ) {
+                    $mapping[ $field ] = (int) $_POST['mapping'][ $field ];
+                }
+            }
+            PIT_Import_Export::import_from_csv_string( $csv, $mapping );
+            echo '<div class="notice notice-success"><p>' . esc_html__( 'Import complete.', 'personal-inventory-tracker' ) . '</p></div>';
+        } elseif ( isset( $_POST['pit_import_step'] ) && 'preview' === $_POST['pit_import_step'] ) {
+            check_admin_referer( 'pit_import_preview' );
+            if ( ! empty( $_FILES['pit_import_file']['tmp_name'] ) ) {
+                $csv     = file_get_contents( $_FILES['pit_import_file']['tmp_name'] );
+                $lines   = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
+                $headers = array_shift( $lines );
+                $preview = array_slice( $lines, 0, 5 );
+                echo '<h2>' . esc_html__( 'Preview', 'personal-inventory-tracker' ) . '</h2>';
+                echo '<form method="post">';
+                wp_nonce_field( 'pit_import_process' );
+                echo '<input type="hidden" name="pit_import_step" value="process" />';
+                echo '<input type="hidden" name="pit_import_csv" value="' . esc_attr( base64_encode( $csv ) ) . '" />';
+                echo '<table class="widefat"><thead><tr>';
+                foreach ( $headers as $h ) {
+                    echo '<th>' . esc_html( $h ) . '</th>';
+                }
+                echo '</tr></thead><tbody>';
+                foreach ( $preview as $row ) {
+                    echo '<tr>';
+                    foreach ( $row as $col ) {
+                        echo '<td>' . esc_html( $col ) . '</td>';
+                    }
+                    echo '</tr>';
+                }
+                echo '</tbody></table>';
+                foreach ( PIT_Import_Export::get_headers() as $field ) {
+                    echo '<p><label>' . esc_html( $field ) . ' <select name="mapping[' . esc_attr( $field ) . ']">';
+                    foreach ( $headers as $index => $header ) {
+                        $selected = selected( $header, $field, false );
+                        echo '<option value="' . esc_attr( $index ) . '"' . $selected . '>' . esc_html( $header ) . '</option>';
+                    }
+                    echo '</select></label></p>';
+                }
+                submit_button( __( 'Import', 'personal-inventory-tracker' ) );
+                echo '</form></div>';
+                return;
+            }
+        }
+
+        $export_url = wp_nonce_url( add_query_arg( 'pit_export', 1 ), 'pit_export_all' );
+        echo '<p><a class="button" href="' . esc_url( $export_url ) . '">' . esc_html__( 'Export All Items', 'personal-inventory-tracker' ) . '</a></p>';
+        echo '<h2>' . esc_html__( 'Import', 'personal-inventory-tracker' ) . '</h2>';
+        echo '<form method="post" enctype="multipart/form-data">';
+        wp_nonce_field( 'pit_import_preview' );
+        echo '<input type="hidden" name="pit_import_step" value="preview" />';
+        echo '<input type="file" name="pit_import_file" accept=".csv" required />';
+        submit_button( __( 'Upload', 'personal-inventory-tracker' ), 'secondary' );
+        echo '</form>';
         echo '</div>';
     }
 

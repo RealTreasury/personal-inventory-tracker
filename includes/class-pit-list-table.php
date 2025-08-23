@@ -143,29 +143,6 @@ class PIT_List_Table extends WP_List_Table {
     }
 
     protected function export_items( $item_ids ) {
-        if ( headers_sent() ) {
-            return;
-        }
-
-        header( 'Content-Type: text/csv' );
-        header( 'Content-Disposition: attachment;filename=pit-items.csv' );
-
-        $output = fopen( 'php://output', 'w' );
-        fputcsv( $output, array( 'Name', 'Category', 'Qty', 'Unit', 'Last Purchased', 'Threshold', 'Interval', 'Status' ) );
-        foreach ( $item_ids as $id ) {
-            $row = array(
-                get_the_title( $id ),
-                implode( ', ', wp_get_post_terms( $id, 'pit_category', array( 'fields' => 'names' ) ) ),
-                get_post_meta( $id, 'pit_qty', true ),
-                get_post_meta( $id, 'pit_unit', true ),
-                get_post_meta( $id, 'pit_last_purchased', true ),
-                get_post_meta( $id, 'pit_threshold', true ),
-                get_post_meta( $id, 'pit_interval', true ),
-                get_post_meta( $id, 'pit_status', true ),
-            );
-            fputcsv( $output, $row );
-        }
-        fclose( $output );
-        exit;
+        PIT_Import_Export::output_csv( $item_ids );
     }
 }
