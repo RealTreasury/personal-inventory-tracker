@@ -655,6 +655,87 @@ class PIT_Enhanced_REST {
         return null;
     }
 
+    // Import data
+    public function import_data( $request ) {
+        $permission = $this->permissions_write( $request );
+        if ( is_wp_error( $permission ) ) {
+            return $permission;
+        }
+
+        $items = $request->get_param( 'items' );
+        if ( ! is_array( $items ) ) {
+            return new WP_Error( 'invalid_items', __( 'Invalid items data.', 'personal-inventory-tracker' ), [ 'status' => 400 ] );
+        }
+
+        $imported = 0;
+        $errors   = [];
+
+        foreach ( $items as $item ) {
+            $title = isset( $item['title'] ) ? sanitize_text_field( $item['title'] ) : '';
+
+            if ( '' === $title ) {
+                $errors[] = __( 'Missing title.', 'personal-inventory-tracker' );
+                continue;
+            }
+
+            $existing = get_page_by_title( $title, OBJECT, 'pit_item' );
+            if ( $existing ) {
+                $id = $existing->ID;
+                wp_update_post( [ 'ID' => $id, 'post_title' => $title ] );
+            } else {
+                $id = wp_insert_post(
+                    [
+                        'post_type'   => 'pit_item',
+                        'post_title'  => $title,
+                        'post_status' => 'publish',
+                    ],
+                    true
+                );
+                if ( is_wp_error( $id ) ) {
+                    $errors[] = $id->get_error_message();
+                    continue;
+                }
+            }
+
+            if ( isset( $item['qty'] ) ) {
+                update_post_meta( $id, 'pit_qty', absint( $item['qty'] ) );
+            }
+
+            if ( isset( $item['unit'] ) ) {
+                update_post_meta( $id, 'pit_unit', sanitize_text_field( $item['unit'] ) );
+            }
+
+            if ( isset( $item['threshold'] ) ) {
+                update_post_meta( $id, 'pit_threshold', absint( $item['threshold'] ) );
+            }
+
+            if ( isset( $item['notes'] ) ) {
+                update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $item['notes'] ) );
+            }
+
+            if ( isset( $item['category'] ) ) {
+                $slug = sanitize_title( $item['category'] );
+                $term = get_term_by( 'slug', $slug, 'pit_category' );
+                if ( ! $term ) {
+                    $term = wp_insert_term( $slug, 'pit_category', [ 'slug' => $slug ] );
+                }
+                if ( ! is_wp_error( $term ) ) {
+                    $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
+                    wp_set_post_terms( $id, [ $term_id ], 'pit_category', false );
+                }
+            }
+
+            $imported++;
+        }
+
+        return rest_ensure_response(
+            [
+                'imported' => $imported,
+                'errors'   => $errors,
+            ]
+        );
+    }
+
     // Export data
     public function export_data($request) {
         $format = $request->get_param('format') ?: 'csv';
