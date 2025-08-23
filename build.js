@@ -42,7 +42,13 @@ const builds = [
   { entryPoints: ['src/ocr.js'], outfile: 'assets/ocr.js', globalName: 'PITOcr', external: ['tesseract.js'] },
   { entryPoints: ['src/import-export.jsx'], outfile: 'assets/import-export.js', globalName: 'PITImportExport', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
   { entryPoints: ['src/shopping-list.jsx'], outfile: 'assets/shopping-list.js', globalName: 'PITShoppingList', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
-  { entryPoints: ['src/ocr-scanner.jsx'], outfile: 'assets/ocr-scanner.js', globalName: 'PITOcrScanner', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
+  {
+    entryPoints: ['src/ocr-scanner.jsx'],
+    outfile: 'assets/ocr-scanner.js',
+    loader: { '.jsx': 'jsx' },
+    external: ['react', 'react-dom'],
+    format: 'esm',
+  },
 ];
 
 async function build(config) {
