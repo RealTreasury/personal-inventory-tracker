@@ -287,6 +287,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <?php
 if ( ! empty( $quick_add_notice ) ) {
-    echo $quick_add_notice;
+    echo wp_kses_post( $quick_add_notice );
 }
 ?>
