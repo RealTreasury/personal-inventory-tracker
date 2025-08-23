@@ -94,7 +94,7 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
 
     try {
       // Import Tesseract dynamically to avoid blocking
-      const Tesseract = await import('tesseract.js');
+      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
 
       setProcessingStage('Loading OCR engine...');
 

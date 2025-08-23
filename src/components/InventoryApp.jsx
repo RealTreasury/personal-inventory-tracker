@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
   Search, Plus, Upload, Download, Camera, BarChart3,
   TrendingUp, Package, AlertTriangle, CheckCircle,
   Filter, Sort, Grid, List, Settings, Home, ShoppingCart,
   Calendar, PieChart, Activity, Trash2, Edit, Eye
 } from 'lucide-react';
+
+const AnalyticsView = lazy(() => import('./AnalyticsView.jsx'));
+const OCRScannerView = lazy(() => import('./OCRScannerView.jsx'));
+const ImportExportView = lazy(() => import('./ImportExportView.jsx'));
 
 // Enhanced Inventory Management App
 const InventoryApp = () => {
@@ -380,11 +384,13 @@ const InventoryApp = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="px-4 sm:px-6 lg:px-8 py-8">
-        {view === 'dashboard' && <Dashboard />}
-        {view === 'inventory' && <InventoryView />}
-        {view === 'analytics' && <div>Analytics view coming soon...</div>}
-        {view === 'scan' && <div>OCR Scanning view coming soon...</div>}
-        {view === 'import' && <div>Import view coming soon...</div>}
+        <Suspense fallback={<div>Loading...</div>}>
+          {view === 'dashboard' && <Dashboard />}
+          {view === 'inventory' && <InventoryView />}
+          {view === 'analytics' && <AnalyticsView />}
+          {view === 'scan' && <OCRScannerView items={items} />}
+          {view === 'import' && <ImportExportView onItemsUpdated={fetchItems} />}
+        </Suspense>
       </main>
     </div>
   );

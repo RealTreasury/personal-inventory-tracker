@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { CheckCircle, AlertTriangle, Package } from 'lucide-react';
 
 const AnalyticsView = ({ timeRange = 30 }) => {
   const [selectedMetric, setSelectedMetric] = useState('purchases');
   const [items, setItems] = useState([]);
+  const chartRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -61,6 +62,34 @@ const AnalyticsView = ({ timeRange = 30 }) => {
     return recentItems.filter(item => metric.filter(item));
   }, [recentItems, metrics, selectedMetric]);
 
+  useEffect(() => {
+    let chartInstance;
+    async function loadChart() {
+      const { Chart } = await import('https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.esm.js');
+      if (chartRef.current) {
+        chartInstance = new Chart(chartRef.current, {
+          type: 'bar',
+          data: {
+            labels: ['Purchases', 'Low Stock', 'Expired'],
+            datasets: [
+              {
+                data: [
+                  recentItems.length,
+                  recentItems.filter(metrics.lowStock.filter).length,
+                  recentItems.filter(metrics.expired.filter).length,
+                ],
+                backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'],
+              },
+            ],
+          },
+          options: { responsive: true, plugins: { legend: { display: false } } },
+        });
+      }
+    }
+    loadChart();
+    return () => chartInstance && chartInstance.destroy();
+  }, [recentItems, metrics]);
+
   return (
     <div className="space-y-6">
       <div className="flex space-x-4">
@@ -82,6 +111,7 @@ const AnalyticsView = ({ timeRange = 30 }) => {
           );
         })}
       </div>
+      <canvas ref={chartRef} className="max-w-md" />
       <div>
         <ul className="divide-y divide-gray-200">
           {filteredItems.map(item => (

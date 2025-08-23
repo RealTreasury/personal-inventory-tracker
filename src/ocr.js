@@ -1,4 +1,11 @@
-import Tesseract from 'tesseract.js';
+let tesseractPromise;
+
+function loadTesseract() {
+  if (!tesseractPromise) {
+    tesseractPromise = import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
+  }
+  return tesseractPromise;
+}
 
 /**
  * Run OCR on a receipt image and return item suggestions.
@@ -12,6 +19,7 @@ export async function extractItemSuggestions(image, minConfidence = 60) {
     console.warn('OCR is only supported in browser environments.');
     return [];
   }
+  const Tesseract = await loadTesseract();
   const { data } = await Tesseract.recognize(image, 'eng');
   return data.lines
     .filter(line => line.confidence >= minConfidence)
