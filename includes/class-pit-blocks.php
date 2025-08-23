@@ -16,15 +16,19 @@ class PIT_Blocks {
 
     /**
      * Initialize hooks.
+     *
+     * @return void
      */
-    public static function init() {
+    public static function init(): void {
         add_action( 'init', array( __CLASS__, 'register_blocks' ) );
     }
 
     /**
      * Register plugin blocks.
+     *
+     * @return void
      */
-    public static function register_blocks() {
+    public static function register_blocks(): void {
         $dir = PIT_PLUGIN_DIR . 'blocks/';
 
         $blocks = array( 'pit-app', 'inventory-table' );
