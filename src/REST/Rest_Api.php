@@ -195,7 +195,7 @@ class Rest_Api {
         if ( true !== $nonce ) {
             return $nonce;
         }
-        return current_user_can( 'read' );
+        return current_user_can( 'view_inventory' );
     }
 
     public function permissions_write( $request ) {
@@ -206,7 +206,7 @@ class Rest_Api {
         if ( get_option( 'pit_read_only' ) ) {
             return new WP_Error( 'pit_read_only', __( 'Read-only mode enabled.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
-        return current_user_can( 'edit_posts' );
+        return current_user_can( 'manage_inventory_items' );
     }
 
     protected function prepare_item( $post ) {

@@ -22,6 +22,7 @@ define( 'PIT_VERSION', '2.0.0' );
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cpt.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-taxonomy.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-import-export.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-capabilities.php';
 require_once PIT_PLUGIN_DIR . 'src/Admin/Admin.php';
 require_once PIT_PLUGIN_DIR . 'src/Reports/Reports.php';
 require_once PIT_PLUGIN_DIR . 'src/REST/Rest_Api.php';
@@ -121,7 +122,7 @@ class PIT_Enhanced_REST {
     public function permissions_read($request) {
         // Allow logged-in users or public if enabled
         $public_access = get_option('pit_public_access', false);
-        return $public_access || current_user_can('read');
+        return $public_access || current_user_can('view_inventory');
     }
 
     private function verify_nonce( $request ) {
@@ -724,9 +725,9 @@ function pit_enqueue_enhanced_frontend() {
             'nonce'     => wp_create_nonce( 'wp_rest' ),
             'currentUser' => get_current_user_id(),
             'userCan'   => [
-                'edit'   => current_user_can( 'edit_posts' ),
-                'delete' => current_user_can( 'delete_posts' ),
-                'manage' => current_user_can( 'manage_options' ),
+                'edit'   => current_user_can( 'manage_inventory_items' ),
+                'delete' => current_user_can( 'manage_inventory_items' ),
+                'manage' => current_user_can( 'manage_inventory_settings' ),
             ],
             'settings' => [
                 'publicAccess'    => get_option( 'pit_public_access', false ),
@@ -778,7 +779,7 @@ function pit_enhanced_shortcode( $atts = [] ) {
         isset( $_POST['action'], $_POST['pit_nonce'] ) &&
         'pit_quick_add' === $_POST['action'] &&
         wp_verify_nonce( $_POST['pit_nonce'], 'pit_quick_add' ) &&
-        current_user_can( 'edit_posts' ) &&
+        current_user_can( 'manage_inventory_items' ) &&
         ! $read_only
     ) {
         $item_name = sanitize_text_field( wp_unslash( $_POST['item_name'] ) );
@@ -810,8 +811,8 @@ function pit_enhanced_shortcode( $atts = [] ) {
         }
     }
 
-    $can_edit   = current_user_can( 'edit_posts' );
-    $can_manage = current_user_can( 'manage_options' );
+    $can_edit   = current_user_can( 'manage_inventory_items' );
+    $can_manage = current_user_can( 'manage_inventory_settings' );
     $settings   = [
         'publicAccess'      => get_option( 'pit_public_access', false ),
         'readOnlyMode'      => $read_only,
@@ -864,6 +865,7 @@ function pit_activate() {
     PIT_Taxonomy::activate();
     PIT_Cron::activate();
     PIT_Settings::activate();
+    PIT_Capabilities::add_capabilities();
     
     // Add enhanced options
     add_option('pit_public_access', false);
@@ -881,6 +883,7 @@ function pit_deactivate() {
     PIT_CPT::deactivate();
     PIT_Taxonomy::deactivate();
     PIT_Cron::deactivate();
+    PIT_Capabilities::remove_capabilities();
     flush_rewrite_rules();
 }
 
@@ -912,7 +915,7 @@ add_action('admin_menu', function() {
         'pit_dashboard',
         __('Enhanced Settings', 'personal-inventory-tracker'),
         __('Enhanced Settings', 'personal-inventory-tracker'),
-        'manage_options',
+        'manage_inventory_settings',
         'pit_enhanced_settings',
         'pit_enhanced_settings_page'
     );
@@ -922,7 +925,7 @@ function pit_enhanced_settings_page() {
     if ( isset( $_POST['submit'] ) ) {
         check_admin_referer( 'pit_enhanced_settings', 'pit_nonce' );
 
-        if ( current_user_can( 'manage_inventory_items' ) ) {
+        if ( current_user_can( 'manage_inventory_settings' ) ) {
             $public_access  = isset( $_POST['public_access'] ) ? boolval( wp_unslash( $_POST['public_access'] ) ) : false;
             $read_only_mode = isset( $_POST['read_only_mode'] ) ? boolval( wp_unslash( $_POST['read_only_mode'] ) ) : false;
             $ocr_confidence = isset( $_POST['ocr_confidence'] ) ? absint( wp_unslash( $_POST['ocr_confidence'] ) ) : 60;
