@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Upload,
   Download,
@@ -71,9 +71,25 @@ const ImportExportView = ({ onItemsUpdated }) => {
       category: ['category', 'type', 'group'],
       unit: ['unit', 'measure', 'measurement'],
       threshold: ['threshold', 'min_stock', 'reorder_level'],
-      notes: ['notes', 'description', 'memo']
+      notes: ['notes', 'description', 'memo'],
+      image_url: ['image', 'photo', 'picture', 'img']
     }
   };
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pit_field_mapping');
+      if (saved) {
+        setFieldMapping(JSON.parse(saved));
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('pit_field_mapping', JSON.stringify(fieldMapping));
+    } catch (e) {}
+  }, [fieldMapping]);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -115,7 +131,8 @@ const ImportExportView = ({ onItemsUpdated }) => {
       }
       setImportProgress(50);
       if (parsed) {
-        setFieldMapping(parsed.mapping || {});
+        const saved = JSON.parse(localStorage.getItem('pit_field_mapping') || '{}');
+        setFieldMapping({ ...parsed.mapping, ...saved });
         setPreviewData(parsed.data.slice(0, 10));
         setShowPreview(true);
       }
@@ -143,6 +160,11 @@ const ImportExportView = ({ onItemsUpdated }) => {
         Object.entries(fieldMapping).forEach(([field, sourceField]) => {
           if (sourceField && row[sourceField] !== undefined) {
             item[field] = row[sourceField];
+          }
+        });
+        Object.entries(row).forEach(([key, value]) => {
+          if (key.startsWith('meta_')) {
+            item[key] = value;
           }
         });
         return item;
@@ -567,7 +589,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
             <div className="mb-6">
               <h4 className="font-medium text-gray-900 mb-3">Field Mapping</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {['title', 'qty', 'category', 'unit', 'threshold', 'notes'].map((field) => (
+                {['title', 'qty', 'category', 'unit', 'threshold', 'notes', 'image_url'].map((field) => (
                   <div key={field}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       {field.charAt(0).toUpperCase() + field.slice(1)}
