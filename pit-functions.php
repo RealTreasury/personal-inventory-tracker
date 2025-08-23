@@ -53,22 +53,35 @@ function pit_update_item( int $post_id, array $data ) {
 
     $sanitized = array();
 
-    // Known fields and their sanitization callbacks.
+    // Known fields, their sanitization callbacks, and expected types.
     $schema = array(
-        'post_title'        => 'sanitize_text_field',
-        'qty'               => 'pit_sanitize_int',
-        'reorder_threshold' => 'pit_sanitize_int',
-        'reorder_interval'  => 'pit_sanitize_int',
-        'last_reordered'    => 'pit_sanitize_int',
+        'post_title'        => array( 'sanitize_text_field', 'string' ),
+        'qty'               => array( 'pit_sanitize_int', 'int' ),
+        'reorder_threshold' => array( 'pit_sanitize_int', 'int' ),
+        'reorder_interval'  => array( 'pit_sanitize_int', 'int' ),
+        'last_reordered'    => array( 'pit_sanitize_int', 'int' ),
     );
 
     foreach ( $data as $field => $value ) {
-        if ( isset( $schema[ $field ] ) ) {
-            $sanitize = $schema[ $field ];
-            $sanitized[ $field ] = call_user_func( $sanitize, $value );
-        } else {
-            $sanitized[ $field ] = pit_sanitize_text( $value );
+        if ( ! isset( $schema[ $field ] ) ) {
+            error_log( 'Unknown field in pit_update_item: ' . $field );
+            continue;
         }
+
+        $sanitize = $schema[ $field ][0];
+        $type     = $schema[ $field ][1];
+
+        if ( 'int' === $type ) {
+            if ( ! is_scalar( $value ) || ! is_numeric( $value ) ) {
+                return new WP_Error( 'pit_invalid_type', sprintf( __( 'Invalid type for %s.', 'personal-inventory-tracker' ), esc_html( $field ) ) );
+            }
+        } else {
+            if ( ! is_scalar( $value ) ) {
+                return new WP_Error( 'pit_invalid_type', sprintf( __( 'Invalid type for %s.', 'personal-inventory-tracker' ), esc_html( $field ) ) );
+            }
+        }
+
+        $sanitized[ $field ] = call_user_func( $sanitize, $value );
     }
 
     if ( isset( $sanitized['post_title'] ) ) {
