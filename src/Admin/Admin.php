@@ -3,6 +3,7 @@
 namespace RealTreasury\Inventory\Admin;
 
 use RealTreasury\Inventory\Reports\Reports;
+use RealTreasury\Inventory\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
@@ -320,11 +321,12 @@ document.addEventListener('DOMContentLoaded',function(){
         echo '</div>';
 
         wp_enqueue_script( 'pit-shopping-list', PIT_PLUGIN_URL . 'assets/shopping-list.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
+        $settings = Settings::get_settings();
         wp_localize_script( 'pit-shopping-list', 'pitApp', array(
             'restUrl'  => esc_url_raw( rest_url( 'pit/v2/' ) ),
             'nonce'    => wp_create_nonce( 'wp_rest' ),
             'settings' => array(
-                'currency' => get_option( 'pit_currency', '$' ),
+                'currency' => $settings['currency'],
             ),
         ) );
     }

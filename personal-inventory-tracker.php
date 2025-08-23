@@ -118,8 +118,8 @@ class PIT_Enhanced_REST {
     // Permission callbacks
     public function permissions_read($request) {
         // Allow logged-in users or public if enabled
-        $public_access = get_option('pit_public_access', false);
-        return $public_access || current_user_can('view_inventory');
+        $settings = \RealTreasury\Inventory\Settings::get_settings();
+        return ! empty( $settings['public_access'] ) || current_user_can( 'view_inventory' );
     }
 
     private function verify_nonce( $request ) {
@@ -137,7 +137,8 @@ class PIT_Enhanced_REST {
             return $nonce_check;
         }
 
-        if ( get_option( 'pit_read_only_mode', false ) ) {
+        $settings = \RealTreasury\Inventory\Settings::get_settings();
+        if ( ! empty( $settings['read_only_mode'] ) ) {
             return new WP_Error( 'read_only', __( 'Read-only mode enabled', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
 
@@ -742,41 +743,43 @@ function pit_enqueue_enhanced_frontend() {
         wp_enqueue_script( 'pit-enhanced' );
         wp_script_add_data( 'pit-enhanced', 'type', 'module' );
 
+        $pit_settings = \RealTreasury\Inventory\Settings::get_settings();
+
         wp_localize_script( 'pit-enhanced', 'pitApp', [
-            'restUrl'   => rest_url( 'pit/v2/' ),
-            'nonce'     => wp_create_nonce( 'wp_rest' ),
+            'restUrl'     => rest_url( 'pit/v2/' ),
+            'nonce'       => wp_create_nonce( 'wp_rest' ),
             'currentUser' => get_current_user_id(),
-            'userCan'   => [
+            'userCan'     => [
                 'edit'   => current_user_can( 'manage_inventory_items' ),
                 'delete' => current_user_can( 'manage_inventory_items' ),
                 'manage' => current_user_can( 'manage_inventory_settings' ),
             ],
-            'settings' => [
-                'publicAccess'    => get_option( 'pit_public_access', false ),
-                'readOnlyMode'    => get_option( 'pit_read_only_mode', false ),
-                'defaultConfidence' => get_option( 'pit_ocr_confidence', 60 ),
-                'currency'        => get_option( 'pit_currency', '$' ),
+            'settings'   => [
+                'publicAccess'      => ! empty( $pit_settings['public_access'] ),
+                'readOnlyMode'      => ! empty( $pit_settings['read_only_mode'] ),
+                'defaultConfidence' => intval( $pit_settings['ocr_min_confidence'] ),
+                'currency'          => $pit_settings['currency'],
             ],
-            'i18n' => [
-                'dashboard'     => __( 'Dashboard', 'personal-inventory-tracker' ),
-                'inventory'     => __( 'Inventory', 'personal-inventory-tracker' ),
-                'analytics'     => __( 'Analytics', 'personal-inventory-tracker' ),
-                'scanner'       => __( 'Scanner', 'personal-inventory-tracker' ),
-                'shoppingList'  => __( 'Shopping List', 'personal-inventory-tracker' ),
-                'search'        => __( 'Search items...', 'personal-inventory-tracker' ),
-                'addItem'       => __( 'Add Item', 'personal-inventory-tracker' ),
-                'totalItems'    => __( 'Total Items', 'personal-inventory-tracker' ),
-                'lowStock'      => __( 'Low Stock', 'personal-inventory-tracker' ),
-                'outOfStock'    => __( 'Out of Stock', 'personal-inventory-tracker' ),
+            'i18n'       => [
+                'dashboard'       => __( 'Dashboard', 'personal-inventory-tracker' ),
+                'inventory'       => __( 'Inventory', 'personal-inventory-tracker' ),
+                'analytics'       => __( 'Analytics', 'personal-inventory-tracker' ),
+                'scanner'         => __( 'Scanner', 'personal-inventory-tracker' ),
+                'shoppingList'    => __( 'Shopping List', 'personal-inventory-tracker' ),
+                'search'          => __( 'Search items...', 'personal-inventory-tracker' ),
+                'addItem'         => __( 'Add Item', 'personal-inventory-tracker' ),
+                'totalItems'      => __( 'Total Items', 'personal-inventory-tracker' ),
+                'lowStock'        => __( 'Low Stock', 'personal-inventory-tracker' ),
+                'outOfStock'      => __( 'Out of Stock', 'personal-inventory-tracker' ),
                 'recentPurchases' => __( 'Recent Purchases', 'personal-inventory-tracker' ),
-                'exportData'    => __( 'Export Data', 'personal-inventory-tracker' ),
-                'importData'    => __( 'Import Data', 'personal-inventory-tracker' ),
-                'scanReceipt'   => __( 'Scan Receipt', 'personal-inventory-tracker' ),
-                'categories'    => __( 'Categories', 'personal-inventory-tracker' ),
-                'confirmDelete' => __( 'Are you sure you want to delete this item?', 'personal-inventory-tracker' ),
-                'loading'       => __( 'Loading...', 'personal-inventory-tracker' ),
-                'error'         => __( 'An error occurred', 'personal-inventory-tracker' ),
-                'success'       => __( 'Operation completed successfully', 'personal-inventory-tracker' ),
+                'exportData'      => __( 'Export Data', 'personal-inventory-tracker' ),
+                'importData'      => __( 'Import Data', 'personal-inventory-tracker' ),
+                'scanReceipt'     => __( 'Scan Receipt', 'personal-inventory-tracker' ),
+                'categories'      => __( 'Categories', 'personal-inventory-tracker' ),
+                'confirmDelete'   => __( 'Are you sure you want to delete this item?', 'personal-inventory-tracker' ),
+                'loading'         => __( 'Loading...', 'personal-inventory-tracker' ),
+                'error'           => __( 'An error occurred', 'personal-inventory-tracker' ),
+                'success'         => __( 'Operation completed successfully', 'personal-inventory-tracker' ),
             ],
         ] );
     }
@@ -835,7 +838,8 @@ function pit_enhanced_shortcode( $atts = [] ) {
     );
 
     $quick_add_notice = '';
-    $read_only        = get_option( 'pit_read_only_mode', false );
+    $pit_settings     = \RealTreasury\Inventory\Settings::get_settings();
+    $read_only        = ! empty( $pit_settings['read_only_mode'] );
 
     if (
         isset( $_POST['action'], $_POST['pit_nonce'] ) &&
@@ -876,10 +880,10 @@ function pit_enhanced_shortcode( $atts = [] ) {
     $can_edit   = current_user_can( 'manage_inventory_items' );
     $can_manage = current_user_can( 'manage_inventory_settings' );
     $settings   = [
-        'publicAccess'      => get_option( 'pit_public_access', false ),
+        'publicAccess'      => ! empty( $pit_settings['public_access'] ),
         'readOnlyMode'      => $read_only,
-        'defaultConfidence' => get_option( 'pit_ocr_confidence', 60 ),
-        'currency'          => get_option( 'pit_currency', '$' ),
+        'defaultConfidence' => intval( $pit_settings['ocr_min_confidence'] ),
+        'currency'          => $pit_settings['currency'],
         'dateFormat'        => get_option( 'date_format' ),
         'timeFormat'        => get_option( 'time_format' ),
     ];
@@ -938,11 +942,6 @@ function pit_activate() {
     \RealTreasury\Inventory\Settings::activate();
     \RealTreasury\Inventory\Capabilities::add_capabilities();
     
-    // Add enhanced options
-    add_option('pit_public_access', false);
-    add_option('pit_read_only_mode', false);
-    add_option('pit_ocr_confidence', 60);
-    add_option('pit_currency', '$');
     add_option('pit_version', PIT_VERSION);
 
     flush_rewrite_rules();
@@ -981,178 +980,3 @@ add_action('admin_enqueue_scripts', function($hook) {
     }
 });
 
-// Add settings page for enhanced options
-add_action( 'admin_init', 'pit_register_enhanced_settings' );
-add_action( 'admin_menu', function() {
-    add_submenu_page(
-        'pit_dashboard',
-        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
-        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
-        'manage_inventory_settings',
-        'pit_enhanced_settings',
-        'pit_enhanced_settings_page'
-    );
-} );
-
-function pit_enhanced_settings_page() {
-    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
-        return;
-    }
-    ?>
-    <div class="wrap">
-        <h1><?php esc_html_e( 'Enhanced Settings', 'personal-inventory-tracker' ); ?></h1>
-        <form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
-            <?php
-            settings_fields( 'pit_enhanced_settings' );
-            do_settings_sections( 'pit_enhanced_settings' );
-            submit_button();
-            ?>
-        </form>
-    </div>
-    <?php
-}
-
-function pit_register_enhanced_settings() {
-    register_setting(
-        'pit_enhanced_settings',
-        'pit_public_access',
-        array(
-            'type'              => 'boolean',
-            'sanitize_callback' => 'pit_sanitize_public_access',
-            'default'           => false,
-        )
-    );
-
-    register_setting(
-        'pit_enhanced_settings',
-        'pit_read_only_mode',
-        array(
-            'type'              => 'boolean',
-            'sanitize_callback' => 'pit_sanitize_read_only_mode',
-            'default'           => false,
-        )
-    );
-
-    register_setting(
-        'pit_enhanced_settings',
-        'pit_ocr_confidence',
-        array(
-            'type'              => 'integer',
-            'sanitize_callback' => 'pit_sanitize_ocr_confidence',
-            'default'           => 60,
-        )
-    );
-
-    register_setting(
-        'pit_enhanced_settings',
-        'pit_currency',
-        array(
-            'type'              => 'string',
-            'sanitize_callback' => 'pit_sanitize_currency',
-            'default'           => '$',
-        )
-    );
-
-    add_settings_section(
-        'pit_enhanced_main',
-        __( 'Enhanced Settings', 'personal-inventory-tracker' ),
-        '__return_null',
-        'pit_enhanced_settings'
-    );
-
-    add_settings_field(
-        'pit_public_access',
-        __( 'Public Access', 'personal-inventory-tracker' ),
-        'pit_field_public_access',
-        'pit_enhanced_settings',
-        'pit_enhanced_main'
-    );
-
-    add_settings_field(
-        'pit_read_only_mode',
-        __( 'Read-Only Mode', 'personal-inventory-tracker' ),
-        'pit_field_read_only_mode',
-        'pit_enhanced_settings',
-        'pit_enhanced_main'
-    );
-
-    add_settings_field(
-        'pit_ocr_confidence',
-        __( 'OCR Confidence', 'personal-inventory-tracker' ),
-        'pit_field_ocr_confidence',
-        'pit_enhanced_settings',
-        'pit_enhanced_main'
-    );
-
-    add_settings_field(
-        'pit_currency',
-        __( 'Currency Symbol', 'personal-inventory-tracker' ),
-        'pit_field_currency',
-        'pit_enhanced_settings',
-        'pit_enhanced_main'
-    );
-}
-
-function pit_field_public_access() {
-    $value = get_option( 'pit_public_access', false );
-    printf(
-        '<label><input type="checkbox" name="pit_public_access" value="1" %s /> %s</label>',
-        checked( $value, 1, false ),
-        esc_html__( 'Allow non-logged-in users to view inventory', 'personal-inventory-tracker' )
-    );
-}
-
-function pit_field_read_only_mode() {
-    $value = get_option( 'pit_read_only_mode', false );
-    printf(
-        '<label><input type="checkbox" name="pit_read_only_mode" value="1" %s /> %s</label>',
-        checked( $value, 1, false ),
-        esc_html__( 'Disable editing for all users', 'personal-inventory-tracker' )
-    );
-}
-
-function pit_field_ocr_confidence() {
-    $value = get_option( 'pit_ocr_confidence', 60 );
-    printf(
-        '<input type="range" name="pit_ocr_confidence" min="30" max="95" value="%1$d" class="regular-text" oninput="document.getElementById(\'pit-ocr-confidence-value\').textContent = this.value + \'%\';" /> <span id="pit-ocr-confidence-value">%1$d%%</span>',
-        intval( $value )
-    );
-}
-
-function pit_field_currency() {
-    $value = get_option( 'pit_currency', '$' );
-    printf(
-        '<input type="text" name="pit_currency" value="%s" class="regular-text" />',
-        esc_attr( $value )
-    );
-}
-
-function pit_sanitize_public_access( $value ) {
-    return current_user_can( 'manage_inventory_settings' ) ? ( $value ? 1 : 0 ) : get_option( 'pit_public_access', false );
-}
-
-function pit_sanitize_read_only_mode( $value ) {
-    return current_user_can( 'manage_inventory_settings' ) ? ( $value ? 1 : 0 ) : get_option( 'pit_read_only_mode', false );
-}
-
-function pit_sanitize_ocr_confidence( $value ) {
-    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
-        return get_option( 'pit_ocr_confidence', 60 );
-    }
-    $value = absint( $value );
-    if ( $value < 30 ) {
-        $value = 30;
-    }
-    if ( $value > 95 ) {
-        $value = 95;
-    }
-    return $value;
-}
-
-function pit_sanitize_currency( $value ) {
-    if ( ! current_user_can( 'manage_inventory_settings' ) ) {
-        return get_option( 'pit_currency', '$' );
-    }
-    $value = sanitize_text_field( $value );
-    return '' === $value ? '$' : $value;
-}
