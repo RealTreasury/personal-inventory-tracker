@@ -13,12 +13,14 @@
     var searchInput = document.createElement('input');
     searchInput.type = 'text';
     searchInput.placeholder = pitApp.i18n.search;
+    searchInput.setAttribute('aria-label', pitApp.i18n.search);
     searchInput.addEventListener('input', function(e){
       search = e.target.value.toLowerCase();
       render();
     });
 
     var filterSelect = document.createElement('select');
+    filterSelect.setAttribute('aria-label', pitApp.i18n.filterLabel);
     filterSelect.innerHTML = '<option value="all">'+pitApp.i18n.filterAll+'</option>'+
       '<option value="purchased">'+pitApp.i18n.filterPurchased+'</option>'+
       '<option value="needed">'+pitApp.i18n.filterNeeded+'</option>';
@@ -29,11 +31,13 @@
 
     var exportBtn = document.createElement('button');
     exportBtn.textContent = pitApp.i18n.exportCsv;
+    exportBtn.setAttribute('aria-label', pitApp.i18n.exportCsv);
     exportBtn.addEventListener('click', exportCsv);
 
     var receiptInput = document.createElement('input');
     receiptInput.type = 'file';
     receiptInput.accept = 'image/*';
+    receiptInput.setAttribute('aria-label', pitApp.i18n.scanReceipt);
     receiptInput.addEventListener('change', function(e){
       scanReceipt(e.target.files[0]);
     });
@@ -48,14 +52,21 @@
     var addName = document.createElement('input');
     addName.type = 'text';
     addName.placeholder = pitApp.i18n.addName;
+    addName.setAttribute('aria-label', pitApp.i18n.addName);
     var addQty = document.createElement('input');
     addQty.type = 'number';
     addQty.value = 1;
+    addQty.setAttribute('aria-label', pitApp.i18n.qty);
     var addBtn = document.createElement('button');
+    addBtn.type = 'submit';
     addBtn.textContent = pitApp.i18n.addItem;
     addForm.appendChild(addName);
     addForm.appendChild(addQty);
     addForm.appendChild(addBtn);
+    var addHelp = document.createElement('p');
+    addHelp.className = 'pit-help';
+    addHelp.textContent = pitApp.i18n.addHelp;
+    addForm.appendChild(addHelp);
     addForm.addEventListener('submit', function(e){
       e.preventDefault();
       addItem(addName.value, addQty.value);
@@ -80,12 +91,22 @@
 
     function render(){
       tbody.innerHTML = '';
-      items.filter(function(it){
+      var visible = items.filter(function(it){
         if (search && it.title.toLowerCase().indexOf(search) === -1) return false;
         if (show === 'purchased' && !it.purchased) return false;
         if (show === 'needed' && it.purchased) return false;
         return true;
-      }).forEach(function(it){
+      });
+      if (visible.length === 0) {
+        var emptyTr = document.createElement('tr');
+        var emptyTd = document.createElement('td');
+        emptyTd.colSpan = 4;
+        emptyTd.textContent = pitApp.i18n.noItems;
+        emptyTr.appendChild(emptyTd);
+        tbody.appendChild(emptyTr);
+        return;
+      }
+      visible.forEach(function(it){
         var tr = document.createElement('tr');
         var titleTd = document.createElement('td');
         titleTd.textContent = it.title;
@@ -95,12 +116,14 @@
         var minus = document.createElement('button');
         minus.type = 'button';
         minus.textContent = '-';
+        minus.setAttribute('aria-label', pitApp.i18n.decreaseQty);
         minus.addEventListener('click', function(){ changeQty(it, -1); });
         var qtySpan = document.createElement('span');
         qtySpan.textContent = it.qty;
         var plus = document.createElement('button');
         plus.type = 'button';
         plus.textContent = '+';
+        plus.setAttribute('aria-label', pitApp.i18n.increaseQty);
         plus.addEventListener('click', function(){ changeQty(it, 1); });
         qtyTd.appendChild(minus);
         qtyTd.appendChild(qtySpan);
@@ -111,6 +134,7 @@
         var checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.checked = it.purchased;
+        checkbox.setAttribute('aria-label', pitApp.i18n.togglePurchased);
         checkbox.addEventListener('change', function(){ togglePurchased(it, checkbox.checked); });
         purchasedTd.appendChild(checkbox);
         tr.appendChild(purchasedTd);
@@ -120,7 +144,10 @@
         var del = document.createElement('button');
         del.type = 'button';
         del.textContent = 'x';
-        del.addEventListener('click', function(){ deleteItem(it); });
+        del.setAttribute('aria-label', pitApp.i18n.delete);
+        del.addEventListener('click', function(){
+          if (confirm(pitApp.i18n.confirmDelete)) { deleteItem(it); }
+        });
         actionsTd.appendChild(del);
         tr.appendChild(actionsTd);
 

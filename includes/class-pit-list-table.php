@@ -50,6 +50,10 @@ class PIT_List_Table extends WP_List_Table {
         return sprintf( '<input type="checkbox" name="item_ids[]" value="%s" />', esc_attr( $item['ID'] ) );
     }
 
+    public function no_items() {
+        esc_html_e( 'No inventory items found. Use the "Add New" button to create your first item.', 'personal-inventory-tracker' );
+    }
+
     public function column_name( $item ) {
         $edit_link   = admin_url( 'admin.php?page=pit_add_item&item_id=' . absint( $item['ID'] ) );
         $adjust_link = wp_nonce_url( admin_url( 'admin-post.php?action=pit_quick_adjust&item_id=' . absint( $item['ID'] ) ), 'pit_quick_adjust_' . $item['ID'] );
@@ -57,7 +61,7 @@ class PIT_List_Table extends WP_List_Table {
 
         $actions = array(
             'edit'           => '<a href="' . esc_url( $edit_link ) . '">' . __( 'Edit', 'personal-inventory-tracker' ) . '</a>',
-            'quick_adjust'   => '<a href="' . esc_url( $adjust_link ) . '">' . __( 'Quick Adjust', 'personal-inventory-tracker' ) . '</a>',
+            'quick_adjust'   => '<a href="' . esc_url( $adjust_link ) . '" onclick="return confirm(\'' . esc_js( __( 'Increase quantity for this item?', 'personal-inventory-tracker' ) ) . '\');">' . __( 'Quick Adjust', 'personal-inventory-tracker' ) . '</a>',
             'mark_purchased' => '<a href="' . esc_url( $purchase_link ) . '">' . __( 'Mark Purchased Today', 'personal-inventory-tracker' ) . '</a>',
         );
 
