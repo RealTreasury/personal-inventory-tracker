@@ -4,6 +4,7 @@ import {
   Loader2, Image, FileText, Zap, Settings,
   Plus, Minus, Eye, EyeOff, RotateCw
 } from 'lucide-react';
+import { loadTesseract } from '../ocr';
 
 const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
   const [isScanning, setIsScanning] = useState(false);
@@ -93,9 +94,7 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
     setProcessingStage('Initializing...');
 
     try {
-      // Import Tesseract dynamically to avoid blocking
-      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
-
+      const Tesseract = await loadTesseract();
       setProcessingStage('Loading OCR engine...');
 
       const worker = await Tesseract.createWorker({
@@ -148,7 +147,7 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
     } catch (error) {
       console.error('OCR processing failed:', error);
       setProcessingStage('');
-      alert('OCR processing failed. Please try again.');
+      alert(error.message || 'OCR processing failed. Please try again.');
     } finally {
       setIsScanning(false);
     }
