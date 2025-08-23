@@ -104,17 +104,38 @@ class Import_Export {
     }
 
     public static function import_from_csv_string( $csv, $mapping ) {
-        $lines = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
-        foreach ( $lines as $line ) {
+        $lines  = array_map(
+            function( $line ) {
+                return str_getcsv( $line, ',', '"', '\\' );
+            },
+            preg_split( '/[\r\n]+/', trim( $csv ) )
+        );
+        $errors = array();
+        foreach ( $lines as $row_num => $line ) {
             $data = array();
             foreach ( $mapping as $field => $index ) {
                 if ( isset( $line[ $index ] ) ) {
                     $data[ $field ] = sanitize_text_field( $line[ $index ] );
                 }
             }
+
+            $row_errors = array();
             if ( empty( $data['name'] ) ) {
+                $row_errors[] = __( 'Missing required field: name', 'personal-inventory-tracker' );
+            }
+            if ( ! isset( $data['qty'] ) || '' === $data['qty'] ) {
+                $row_errors[] = __( 'Missing required field: qty', 'personal-inventory-tracker' );
+            } elseif ( ! is_numeric( $data['qty'] ) ) {
+                $row_errors[] = __( 'Invalid quantity', 'personal-inventory-tracker' );
+            }
+            if ( ! empty( $row_errors ) ) {
+                $errors[] = array(
+                    'row'    => $row_num + 1,
+                    'errors' => $row_errors,
+                );
                 continue;
             }
+
             $existing = get_page_by_title( $data['name'], OBJECT, 'pit_item' );
             if ( $existing ) {
                 $id = $existing->ID;
@@ -184,6 +205,8 @@ class Import_Export {
                 }
             }
         }
+
+        return $errors;
     }
 
     public static function classify_uncategorized() {
