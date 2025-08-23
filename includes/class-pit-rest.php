@@ -150,6 +150,10 @@ class PIT_REST {
                             'type' => 'object',
                         ),
                     ),
+                    'settings' => array(
+                        'type'    => 'object',
+                        'required' => false,
+                    ),
                 ),
                 'schema'              => array( $this, 'get_item_schema' ),
             )
@@ -157,11 +161,18 @@ class PIT_REST {
 
         register_rest_route(
             'pit/v1',
-            '/items/export',
+            '/export',
             array(
                 'methods'             => WP_REST_Server::READABLE,
                 'callback'            => array( $this, 'export_items' ),
                 'permission_callback' => array( $this, 'permissions_read' ),
+                'args'                => array(
+                    'format' => array(
+                        'type'    => 'string',
+                        'default' => 'json',
+                        'enum'    => array( 'json', 'csv', 'pdf' ),
+                    ),
+                ),
                 'schema'              => array( $this, 'get_item_schema' ),
             )
         );
@@ -271,34 +282,96 @@ class PIT_REST {
     }
 
     public function import_items( $request ) {
-        $items   = $request->get_param( 'items' );
-        $created = array();
+        $items    = $request->get_param( 'items' );
+        $settings = (array) $request->get_param( 'settings' );
+
+        $update_existing = ! empty( $settings['updateExisting'] );
+        $create_new      = ! empty( $settings['createNew'] );
+        $skip_errors     = ! isset( $settings['skipErrors'] ) || $settings['skipErrors'];
+        $validate_data   = ! empty( $settings['validateData'] );
+
+        $imported = 0;
+        $skipped  = 0;
+        $errors   = array();
+
         if ( is_array( $items ) ) {
             foreach ( $items as $item ) {
-                $id = wp_insert_post(
-                    array(
-                        'post_type'   => 'pit_item',
-                        'post_title'  => sanitize_text_field( $item['title'] ),
-                        'post_status' => 'publish',
-                    ),
-                    true
-                );
-                if ( is_wp_error( $id ) ) {
+                $title = isset( $item['title'] ) ? sanitize_text_field( $item['title'] ) : '';
+                if ( $validate_data && '' === $title ) {
+                    $errors[] = __( 'Missing title.', 'personal-inventory-tracker' );
+                    $skipped++;
+                    if ( ! $skip_errors ) {
+                        break;
+                    }
                     continue;
                 }
+
+                $id = 0;
+                if ( $update_existing && $title ) {
+                    $existing = get_page_by_title( $title, OBJECT, 'pit_item' );
+                    if ( $existing ) {
+                        $id = $existing->ID;
+                        wp_update_post(
+                            array(
+                                'ID'         => $id,
+                                'post_title' => $title,
+                            )
+                        );
+                    }
+                }
+
+                if ( ! $id ) {
+                    if ( ! $create_new ) {
+                        $skipped++;
+                        continue;
+                    }
+                    $id = wp_insert_post(
+                        array(
+                            'post_type'   => 'pit_item',
+                            'post_title'  => $title,
+                            'post_status' => 'publish',
+                        ),
+                        true
+                    );
+                    if ( is_wp_error( $id ) ) {
+                        $errors[] = $id->get_error_message();
+                        $skipped++;
+                        if ( ! $skip_errors ) {
+                            break;
+                        }
+                        continue;
+                    }
+                }
+
                 if ( isset( $item['qty'] ) ) {
                     update_post_meta( $id, 'qty', (int) $item['qty'] );
                 }
                 if ( isset( $item['purchased'] ) ) {
                     update_post_meta( $id, 'purchased', ! empty( $item['purchased'] ) );
                 }
-                $created[] = $this->prepare_item( get_post( $id ) );
+                $imported++;
             }
         }
-        return rest_ensure_response( $created );
+
+        return rest_ensure_response(
+            array(
+                'imported' => $imported,
+                'skipped'  => $skipped,
+                'errors'   => $errors,
+            )
+        );
     }
 
     public function export_items( $request ) {
+        $format = sanitize_key( $request->get_param( 'format' ) );
+        if ( 'csv' === $format ) {
+            $csv = PIT_Import_Export::generate_csv();
+            return new WP_REST_Response( $csv, 200, array( 'Content-Type' => 'text/csv; charset=utf-8' ) );
+        }
+        if ( 'pdf' === $format ) {
+            $pdf = PIT_Import_Export::generate_pdf();
+            return new WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
+        }
         return $this->get_items( $request );
     }
 
