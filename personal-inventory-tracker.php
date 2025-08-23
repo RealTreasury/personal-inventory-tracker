@@ -83,3 +83,18 @@ function pit_app_shortcode() {
 }
 add_shortcode( 'pit_app', 'pit_app_shortcode' );
 
+
+function pit_render_app_block( $attributes, $content ) {
+    pit_enqueue_frontend();
+    ob_start();
+    include PIT_PLUGIN_DIR . 'templates/frontend-app.php';
+    return ob_get_clean();
+}
+
+function pit_register_app_block() {
+    register_block_type( PIT_PLUGIN_DIR . 'blocks/pit-app', array(
+        'render_callback' => 'pit_render_app_block',
+    ) );
+}
+add_action( 'init', 'pit_register_app_block' );
+
