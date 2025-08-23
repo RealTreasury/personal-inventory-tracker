@@ -794,6 +794,13 @@ function pit_enhanced_shortcode( $atts = [] ) {
     );
 
     $view = sanitize_key( $atts['view'] );
+    $inventory_app_props = [
+        'view'      => $view,
+        'canEdit'   => $can_edit,
+        'canManage' => $can_manage,
+        'readOnly'  => $read_only,
+        'settings'  => $settings,
+    ];
 
     ob_start();
     include PIT_PLUGIN_DIR . 'templates/frontend-app.php';
