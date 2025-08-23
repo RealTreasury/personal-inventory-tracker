@@ -1,7 +1,6 @@
 # Personal Inventory Tracker
 
-## Purpose
-Personal Inventory Tracker is a WordPress plugin that helps you manage household items. It offers OCR-powered receipt scanning and CSV import/export so you always know what you have on hand.
+Personal Inventory Tracker is a WordPress plugin that helps you manage household items with OCR-powered receipt scanning and CSV import/export so you always know what you have on hand.
 
 ## Features
 - Custom post type for inventory items.
@@ -16,11 +15,12 @@ Personal Inventory Tracker is a WordPress plugin that helps you manage household
 - Modern browser with JavaScript enabled for OCR utilities.
 - Node & npm (optional) to rebuild assets.
 
-## Installation
-1. Upload the plugin to your site's `wp-content/plugins` directory or install via the WordPress admin.
-2. Run `npm run build` to compile front-end assets if developing locally.
-3. Activate the plugin through the **Plugins** menu.
-4. Configure settings under **Settings → Personal Inventory**.
+## Installation (WordPress.com)
+1. Download the plugin as a ZIP file from this repository.
+2. In your WordPress.com dashboard, go to **Plugins → Upload Plugin**.
+3. Upload the ZIP and click **Install Now**.
+4. Activate the plugin after the upload completes.
+5. Configure settings under **Settings → Personal Inventory**.
 
 ## Quick Start
 1. Prepare a CSV file with your items in the format below.
@@ -73,5 +73,16 @@ Use WP-CLI to manage inventory from the command line.
 ## Building Assets
 Run `npm run build` to compile the JavaScript for both the front-end (`assets/app.js`) and admin (`assets/admin.js`) using esbuild.
 
+## FAQ
+**Does this plugin require a specific WordPress.com plan?**  
+Yes. Uploading custom plugins is available on Business or higher plans.
+
+**Can I use this on self-hosted WordPress?**  
+Absolutely. Install it like any other plugin through **Plugins → Add New**.
+
 ## License
 GPL-2.0+
+
+## Release Notes
+### 1.0.0
+- Initial release.
