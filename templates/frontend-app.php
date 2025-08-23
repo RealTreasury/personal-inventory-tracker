@@ -38,12 +38,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     </div>
 
     <!-- Main App Container -->
-    <div id="pit-enhanced-app" 
-         data-view="<?php echo esc_attr( $view ); ?>"
-         data-can-edit="<?php echo $can_edit ? 'true' : 'false'; ?>"
-         data-can-manage="<?php echo $can_manage ? 'true' : 'false'; ?>"
-         data-read-only="<?php echo $read_only ? 'true' : 'false'; ?>"
-         data-settings="<?php echo esc_attr( wp_json_encode( $settings ) ); ?>"
+    <div id="pit-enhanced-app"
+         data-props="<?php echo esc_attr( wp_json_encode( $inventory_app_props ) ); ?>"
          style="min-height: 100vh; background-color: #f9fafb;">
         
         <!-- Fallback content for users without JavaScript -->
