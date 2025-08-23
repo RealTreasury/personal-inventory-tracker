@@ -1,8 +1,27 @@
-import React, { useMemo, useState } from 'react';
-import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CheckCircle, AlertTriangle, Package } from 'lucide-react';
 
-const AnalyticsView = ({ items = [], purchaseTrends = [], timeRange = 30 }) => {
+const AnalyticsView = ({ timeRange = 30 }) => {
   const [selectedMetric, setSelectedMetric] = useState('purchases');
+  const [items, setItems] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          `${window.pitApp?.restUrl}analytics?range=${timeRange}`,
+          { headers: { 'X-WP-Nonce': window.pitApp?.nonce } }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data.items);
+        }
+      } catch (err) {
+        // silently ignore errors
+      }
+    };
+    fetchData();
+  }, [timeRange]);
 
   // Calculate cutoff date based on selected time range
   const cutoffDate = useMemo(
@@ -10,15 +29,10 @@ const AnalyticsView = ({ items = [], purchaseTrends = [], timeRange = 30 }) => {
     [timeRange]
   );
 
-  // Filter items and purchase trends to the selected range
+  // Filter items to the selected range
   const recentItems = useMemo(
     () => items.filter(item => new Date(item.last_purchased) >= cutoffDate),
     [items, cutoffDate]
-  );
-
-  const recentTrends = useMemo(
-    () => purchaseTrends.filter(trend => new Date(trend.date) >= cutoffDate),
-    [purchaseTrends, cutoffDate]
   );
 
   const metrics = useMemo(
@@ -35,7 +49,7 @@ const AnalyticsView = ({ items = [], purchaseTrends = [], timeRange = 30 }) => {
       },
       expired: {
         label: 'Expired',
-        icon: XCircle,
+        icon: Package,
         filter: item => item.expiry && new Date(item.expiry) < new Date(),
       },
     }),
