@@ -22,6 +22,7 @@ require_once PIT_PLUGIN_DIR . 'includes/class-pit-rest.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-admin.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-import-export.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 
 function pit_activate() {

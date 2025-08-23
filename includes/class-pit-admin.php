@@ -11,6 +11,9 @@ class PIT_Admin {
         add_action( 'admin_post_pit_quick_adjust', array( $this, 'quick_adjust' ) );
         add_action( 'admin_post_pit_mark_purchased', array( $this, 'mark_purchased' ) );
         add_action( 'admin_post_pit_ocr_update', array( $this, 'ocr_update' ) );
+        add_action( 'admin_post_pit_export_all', array( $this, 'export_all' ) );
+        add_action( 'admin_post_pit_import_preview', array( $this, 'import_preview' ) );
+        add_action( 'admin_post_pit_import_process', array( $this, 'import_process' ) );
         add_action( 'admin_notices', array( $this, 'maybe_show_notices' ) );
         add_action( 'admin_notices', array( $this, 'intro_notice' ) );
         add_action( 'admin_init', array( $this, 'maybe_dismiss_intro' ) );
@@ -224,8 +227,89 @@ class PIT_Admin {
             return;
         }
         echo '<div class="wrap"><h1>' . esc_html__( 'Import/Export', 'personal-inventory-tracker' ) . '</h1>';
-        echo '<p>' . esc_html__( 'Export and import inventory items via CSV.', 'personal-inventory-tracker' ) . '</p>';
+
+        // Export section.
+        echo '<h2>' . esc_html__( 'Export', 'personal-inventory-tracker' ) . '</h2>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'pit_export_all' );
+        echo '<input type="hidden" name="action" value="pit_export_all" />';
+        submit_button( __( 'Export All Items', 'personal-inventory-tracker' ), 'primary', 'submit', false );
+        echo '</form>';
+
+        // Import section.
+        echo '<h2>' . esc_html__( 'Import', 'personal-inventory-tracker' ) . '</h2>';
+        echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'pit_import_upload' );
+        echo '<input type="hidden" name="action" value="pit_import_preview" />';
+        echo '<input type="file" name="pit_csv" accept="text/csv" required />';
+        submit_button( __( 'Preview', 'personal-inventory-tracker' ), 'secondary', 'submit', false );
+        echo '</form>';
+
         echo '</div>';
+    }
+
+    public function export_all() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        }
+        check_admin_referer( 'pit_export_all' );
+        PIT_Import_Export::export_csv();
+    }
+
+    public function import_preview() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        }
+        check_admin_referer( 'pit_import_upload' );
+        if ( empty( $_FILES['pit_csv']['tmp_name'] ) ) {
+            wp_safe_redirect( add_query_arg( 'pit_message', 'error', admin_url( 'admin.php?page=pit_import_export' ) ) );
+            exit;
+        }
+        $csv  = file_get_contents( $_FILES['pit_csv']['tmp_name'] );
+        $rows = PIT_Import_Export::parse_csv( $csv );
+        $headers = array_shift( $rows );
+        echo '<div class="wrap"><h1>' . esc_html__( 'Import Preview', 'personal-inventory-tracker' ) . '</h1>';
+        echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+        wp_nonce_field( 'pit_import_process' );
+        echo '<input type="hidden" name="action" value="pit_import_process" />';
+        echo '<input type="hidden" name="pit_csv_data" value="' . esc_attr( base64_encode( $csv ) ) . '" />';
+        echo '<table class="widefat"><thead><tr>';
+        foreach ( PIT_Import_Export::csv_headers() as $field ) {
+            echo '<th>' . esc_html( $field ) . '</th>';
+        }
+        echo '</tr><tr>';
+        foreach ( PIT_Import_Export::csv_headers() as $field ) {
+            echo '<td><select name="mapping[' . esc_attr( $field ) . ']">';
+            echo '<option value="">' . esc_html__( 'Skip', 'personal-inventory-tracker' ) . '</option>';
+            foreach ( $headers as $header ) {
+                printf( '<option value="%s">%s</option>', esc_attr( $header ), esc_html( $header ) );
+            }
+            echo '</select></td>';
+        }
+        echo '</tr></thead><tbody>';
+        $preview = array_slice( $rows, 0, 5 );
+        foreach ( $preview as $row ) {
+            echo '<tr>';
+            foreach ( $row as $col ) {
+                echo '<td>' . esc_html( $col ) . '</td>';
+            }
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+        submit_button( __( 'Import', 'personal-inventory-tracker' ) );
+        echo '</form></div>';
+    }
+
+    public function import_process() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( __( 'Unauthorized', 'personal-inventory-tracker' ) );
+        }
+        check_admin_referer( 'pit_import_process' );
+        $csv     = base64_decode( $_POST['pit_csv_data'] );
+        $mapping = isset( $_POST['mapping'] ) ? array_map( 'sanitize_text_field', (array) $_POST['mapping'] ) : array();
+        PIT_Import_Export::import_from_csv( $csv, $mapping );
+        wp_safe_redirect( add_query_arg( 'pit_message', 'imported', admin_url( 'admin.php?page=pit_import_export' ) ) );
+        exit;
     }
 
     public function ocr_receipt_page() {
@@ -287,6 +371,7 @@ class PIT_Admin {
             'adjusted'  => __( 'Quantity adjusted.', 'personal-inventory-tracker' ),
             'purchased' => __( 'Marked as purchased today.', 'personal-inventory-tracker' ),
             'ocr_updated' => __( 'Inventory updated from receipt.', 'personal-inventory-tracker' ),
+            'imported' => __( 'Items imported.', 'personal-inventory-tracker' ),
             'error'     => __( 'An error occurred.', 'personal-inventory-tracker' ),
         );
         if ( isset( $messages[ $message ] ) ) {

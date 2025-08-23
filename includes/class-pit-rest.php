@@ -39,6 +39,32 @@ class PIT_REST {
                 ),
             )
         );
+
+        register_rest_route(
+            'pit/v1',
+            '/export',
+            array(
+                'methods'             => WP_REST_Server::READABLE,
+                'callback'            => array( $this, 'rest_export' ),
+                'permission_callback' => array( $this, 'permissions_read' ),
+            )
+        );
+
+        register_rest_route(
+            'pit/v1',
+            '/import',
+            array(
+                'methods'             => WP_REST_Server::CREATABLE,
+                'callback'            => array( $this, 'rest_import' ),
+                'permission_callback' => array( $this, 'permissions_write' ),
+                'args'                => array(
+                    'csv' => array(
+                        'required' => true,
+                        'type'     => 'string',
+                    ),
+                ),
+            )
+        );
     }
 
     public function permissions_read( $request ) {
@@ -129,5 +155,21 @@ class PIT_REST {
         }
 
         return rest_ensure_response( true );
+    }
+
+    public function rest_export( $request ) {
+        $csv      = PIT_Import_Export::generate_csv();
+        $response = new WP_REST_Response( $csv );
+        $response->header( 'Content-Type', 'text/csv; charset=utf-8' );
+        return $response;
+    }
+
+    public function rest_import( $request ) {
+        $csv = (string) $request['csv'];
+        if ( ! $csv ) {
+            return new WP_Error( 'pit_no_csv', __( 'No CSV data provided.', 'personal-inventory-tracker' ), array( 'status' => 400 ) );
+        }
+        $count = PIT_Import_Export::import_from_csv( $csv );
+        return rest_ensure_response( array( 'imported' => $count ) );
     }
 }
