@@ -130,10 +130,23 @@ class Import_Export {
             if ( is_wp_error( $id ) ) {
                 continue;
             }
+            if ( empty( $data['category_slug'] ) ) {
+                $settings = Settings::get_settings();
+                if ( ! empty( $settings['auto_categorize'] ) ) {
+                    $slug = \RealTreasury\Inventory\Services\CategoryClassifier::suggest_category(
+                        $data['name'],
+                        $data['notes'] ?? ''
+                    );
+                    if ( $slug ) {
+                        $data['category_slug'] = $slug;
+                    }
+                }
+            }
             if ( ! empty( $data['category_slug'] ) ) {
                 $term = get_term_by( 'slug', $data['category_slug'], 'pit_category' );
                 if ( $term ) {
                     wp_set_post_terms( $id, array( $term->term_id ), 'pit_category', false );
+                    do_action( 'pit_category_auto_assigned', $id, $data['category_slug'] );
                 }
             }
             if ( isset( $data['qty'] ) ) {
@@ -171,6 +184,43 @@ class Import_Export {
                 }
             }
         }
+    }
+
+    public static function classify_uncategorized() {
+        $settings = Settings::get_settings();
+        if ( empty( $settings['auto_categorize'] ) ) {
+            return 0;
+        }
+        $posts = get_posts(
+            array(
+                'post_type'      => 'pit_item',
+                'posts_per_page' => -1,
+                'tax_query'      => array(
+                    array(
+                        'taxonomy' => 'pit_category',
+                        'operator' => 'NOT EXISTS',
+                    ),
+                ),
+            )
+        );
+        $count = 0;
+        foreach ( $posts as $post ) {
+            $notes = get_post_meta( $post->ID, 'pit_notes', true );
+            $slug  = \RealTreasury\Inventory\Services\CategoryClassifier::suggest_category( $post->post_title, $notes );
+            if ( $slug ) {
+                $term = get_term_by( 'slug', $slug, 'pit_category' );
+                if ( ! $term ) {
+                    $term = wp_insert_term( $slug, 'pit_category', array( 'slug' => $slug ) );
+                }
+                if ( ! is_wp_error( $term ) ) {
+                    $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
+                    wp_set_post_terms( $post->ID, array( $term_id ), 'pit_category', false );
+                    do_action( 'pit_category_auto_assigned', $post->ID, $slug );
+                    $count++;
+                }
+            }
+        }
+        return $count;
     }
 
     public static function register_rest_routes() {

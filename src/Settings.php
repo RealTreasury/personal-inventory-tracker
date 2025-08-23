@@ -27,6 +27,8 @@ class Settings {
             'frontend_read_only'=> 0,
             'ocr_regex'         => '',
             'ocr_min_confidence'=> 60,
+            'gpt_api_key'       => '',
+            'auto_categorize'   => 0,
         );
     }
 
@@ -81,6 +83,22 @@ class Settings {
             'ocr_min_confidence',
             __( 'OCR Minimum Confidence', 'personal-inventory-tracker' ),
             array( __CLASS__, 'field_ocr_min_confidence' ),
+            'pit_settings',
+            'pit_settings_main'
+        );
+
+        add_settings_field(
+            'gpt_api_key',
+            __( 'GPT API Key', 'personal-inventory-tracker' ),
+            array( __CLASS__, 'field_gpt_api_key' ),
+            'pit_settings',
+            'pit_settings_main'
+        );
+
+        add_settings_field(
+            'auto_categorize',
+            __( 'Auto-categorize Items', 'personal-inventory-tracker' ),
+            array( __CLASS__, 'field_auto_categorize' ),
             'pit_settings',
             'pit_settings_main'
         );
@@ -158,6 +176,25 @@ class Settings {
         );
     }
 
+    public static function field_gpt_api_key() {
+        $options = self::get_settings();
+        printf(
+            '<input type="password" name="%s[gpt_api_key]" value="%s" class="regular-text" />',
+            esc_attr( self::OPTION_NAME ),
+            esc_attr( $options['gpt_api_key'] )
+        );
+    }
+
+    public static function field_auto_categorize() {
+        $options = self::get_settings();
+        printf(
+            '<label><input type="checkbox" name="%s[auto_categorize]" value="1" %s /> %s</label>',
+            esc_attr( self::OPTION_NAME ),
+            checked( $options['auto_categorize'], 1, false ),
+            esc_html__( 'Suggest categories using GPT when missing', 'personal-inventory-tracker' )
+        );
+    }
+
     public static function sanitize( $input ) {
         if ( ! current_user_can( 'manage_inventory_settings' ) ) {
             return self::get_settings();
@@ -177,6 +214,9 @@ class Settings {
 
         $conf = isset( $input['ocr_min_confidence'] ) ? absint( $input['ocr_min_confidence'] ) : 60;
         $output['ocr_min_confidence'] = min( 100, max( 0, $conf ) );
+
+        $output['gpt_api_key']     = isset( $input['gpt_api_key'] ) ? sanitize_text_field( $input['gpt_api_key'] ) : '';
+        $output['auto_categorize'] = ! empty( $input['auto_categorize'] ) ? 1 : 0;
 
         return $output;
     }
