@@ -49,3 +49,34 @@ add_action( 'plugins_loaded', function() {
     PIT_Cron::init();
 } );
 
+add_action( 'wp_enqueue_scripts', 'pit_enqueue_frontend_assets' );
+
+function pit_enqueue_frontend_assets() {
+    wp_enqueue_script(
+        'pit-app',
+        PIT_PLUGIN_URL . 'assets/app.js',
+        array( 'jquery' ),
+        filemtime( PIT_PLUGIN_DIR . 'assets/app.js' ),
+        true
+    );
+
+    wp_enqueue_style(
+        'pit-app',
+        PIT_PLUGIN_URL . 'assets/app.css',
+        array(),
+        filemtime( PIT_PLUGIN_DIR . 'assets/app.css' )
+    );
+
+    wp_localize_script(
+        'pit-app',
+        'pitApp',
+        array(
+            'restUrl'   => esc_url_raw( rest_url() ),
+            'restNonce' => wp_create_nonce( 'wp_rest' ),
+            'i18n'      => array(
+                'error' => __( 'An error occurred', 'personal-inventory-tracker' ),
+            ),
+        )
+    );
+}
+

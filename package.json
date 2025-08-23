@@ -1,0 +1,16 @@
+{
+  "name": "personal-inventory-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "webpack --mode production",
+    "build:watch": "webpack --watch",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "devDependencies": {
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "style-loader": "^3.3.3",
+    "css-loader": "^6.8.1"
+  }
+}
