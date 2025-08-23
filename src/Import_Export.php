@@ -128,12 +128,34 @@ class Import_Export {
         return '';
     }
 
+    protected static function pdf_escape( $text ) {
+        return str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $text );
+    }
+
     public static function generate_pdf( $item_ids = array() ) {
-        return '';
+        $csv   = self::generate_csv( $item_ids );
+        $body  = self::pdf_escape( $csv );
+        $len   = strlen( $body );
+        $pdf   = "%PDF-1.1\n";
+        $pdf  .= "1 0 obj<<>>endobj\n";
+        $pdf  .= "2 0 obj<< /Length $len >>stream\n$body\nendstream\nendobj\n";
+        $pdf  .= "trailer<< /Root 1 0 R >>\n%%EOF";
+        return $pdf;
     }
 
     public static function generate_excel( $item_ids = array() ) {
-        return '';
+        $csv   = self::generate_csv( $item_ids );
+        $rows  = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
+        $html  = '<table>';
+        foreach ( $rows as $row ) {
+            $html .= '<tr>';
+            foreach ( $row as $cell ) {
+                $html .= '<td>' . esc_html( $cell ) . '</td>';
+            }
+            $html .= '</tr>';
+        }
+        $html .= '</table>';
+        return $html;
     }
 
     public static function import_from_csv_string( $csv, $mapping ) {
