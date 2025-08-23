@@ -61,7 +61,7 @@ A copy of this sample CSV is available at [`docs/sample.csv`](docs/sample.csv).
 - Use SSL and limit write mode to trusted users to protect inventory data.
 
 ## Building Assets
-Run `npm run build` to bundle the OCR utilities into `assets/`.
+Run `npm run build` to compile the JavaScript for both the front-end (`assets/app.js`) and admin (`assets/admin.js`) using esbuild.
 
 ## License
 GPL-2.0+
