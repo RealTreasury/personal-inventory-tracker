@@ -40,6 +40,7 @@ const builds = [
   { entryPoints: ['src/enhanced-app.js'], outfile: 'assets/app.js', globalName: 'PITApp' },
   { entryPoints: ['src/admin.js'], outfile: 'assets/admin.js', globalName: 'PITAdmin' },
   { entryPoints: ['src/ocr.js'], outfile: 'assets/ocr.js', globalName: 'PITOcr', external: ['tesseract.js'] },
+  { entryPoints: ['src/import-export.jsx'], outfile: 'assets/import-export.js', globalName: 'PITImportExport', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
 ];
 
 async function build(config) {

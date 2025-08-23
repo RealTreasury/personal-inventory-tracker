@@ -69,6 +69,14 @@ class PIT_Import_Export {
         return $csv;
     }
 
+    public static function generate_pdf( $item_ids = array() ) {
+        return '';
+    }
+
+    public static function generate_excel( $item_ids = array() ) {
+        return '';
+    }
+
     public static function import_from_csv_string( $csv, $mapping ) {
         $lines = array_map( 'str_getcsv', preg_split( '/[\r\n]+/', trim( $csv ) ) );
         foreach ( $lines as $line ) {
