@@ -16,6 +16,7 @@ class PIT_CPT {
                 'public'       => false,
                 'show_ui'      => true,
                 'supports'     => array( 'title' ),
+                'taxonomies'   => array( 'pit_category' ),
                 'show_in_rest' => false,
             )
         );
