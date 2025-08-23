@@ -1,17 +1,67 @@
-# personal-inventory-tracker
+# Personal Inventory Tracker
 
-This project bundles client-side OCR using [Tesseract.js](https://github.com/naptha/tesseract.js).
+## Purpose
+Personal Inventory Tracker is a WordPress plugin that helps you manage household items. It offers OCR-powered receipt scanning and CSV import/export so you always know what you have on hand.
 
-## Building assets
+## Features
+- Custom post type for inventory items.
+- REST API for integrations.
+- Client-side OCR (Tesseract.js) to extract items from receipts.
+- Import and export inventory via CSV.
+- Cron-based reorder reminders.
 
-Run `npm run build` to produce the bundled files in `assets/`.
+## Requirements
+- WordPress 5.0 or higher.
+- PHP 7.4 or higher.
+- Modern browser with JavaScript enabled for OCR utilities.
+- Node & npm (optional) to rebuild assets.
 
-## Usage
+## Installation
+1. Upload the plugin to your site's `wp-content/plugins` directory or install via the WordPress admin.
+2. Run `npm run build` to compile front-end assets if developing locally.
+3. Activate the plugin through the **Plugins** menu.
+4. Configure settings under **Settings → Personal Inventory**.
 
-The bundled scripts expose helpers on `window` for running OCR on receipt images:
+## Quick Start
+1. Prepare a CSV file with your items in the format below.
+2. In the WordPress admin, navigate to Personal Inventory and import the CSV or add items manually.
+3. Place the `[personal_inventory]` shortcode on a page to display inventory.
+4. Choose a front-end mode:
+   - **Read-only:** visitors can view inventory but cannot modify data.
+   - **Write:** authenticated users can update quantities or add items via the REST API.
+5. Use the OCR widget to scan receipts and pre-fill item fields.
 
-- `extractItemSuggestions(image, minConfidence)`
-- `bindOcrToInput(inputElement, callback, minConfidence)`
+## CSV Format
+Each row represents an inventory item with the following columns:
 
-Both functions operate entirely on the client and filter out low-confidence lines.
+- `post_title` – item name.
+- `qty` – quantity on hand.
+- `reorder_threshold` – quantity at which a reorder is triggered.
+- `reorder_interval` – number of days between automatic reorders.
+- `last_reordered` – Unix timestamp of the most recent reorder.
 
+```csv
+post_title,qty,reorder_threshold,reorder_interval,last_reordered
+Apples,10,2,30,1700000000
+Bananas,5,1,7,1700000000
+Milk,1,2,14,1700000000
+```
+
+A copy of this sample CSV is available at [`docs/sample.csv`](docs/sample.csv).
+
+## OCR Tips
+- Use well-lit, high-contrast photos.
+- Crop images to the receipt area before scanning.
+- Smaller images process faster but must remain legible.
+- Adjust the `minConfidence` parameter in JS helpers for accuracy vs. noise.
+
+## Privacy & Security
+- OCR runs entirely in the browser; receipt images are never uploaded to the server.
+- Inventory data resides in your WordPress database—apply regular WordPress security best practices.
+- Use SSL and limit write mode to trusted users to protect inventory data.
+
+## Building Assets
+Run `npm run build` to bundle the OCR utilities into `assets/`.
+
+## License
+GPL-2.0+
