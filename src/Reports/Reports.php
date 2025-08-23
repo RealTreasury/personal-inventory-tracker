@@ -43,31 +43,28 @@ class Reports {
 
         foreach ( $ids as $id ) {
             $qty        = (int) get_post_meta( $id, 'pit_qty', true );
-            $threshold  = (int) get_post_meta( $id, 'pit_reorder_threshold', true );
-            $interval   = (int) get_post_meta( $id, 'pit_reorder_interval', true );
-            $last_reord = (int) get_post_meta( $id, 'pit_last_reordered', true );
+            $threshold  = (int) get_post_meta( $id, 'pit_threshold', true );
+            $interval   = (int) get_post_meta( $id, 'pit_interval', true );
             $last_purch = get_post_meta( $id, 'pit_last_purchased', true );
+            $last_ts    = $last_purch ? strtotime( $last_purch ) : false;
 
             if ( $qty <= $threshold ) {
                 $low_stock++;
             }
 
-            if ( $interval > 0 && $last_reord > 0 ) {
-                $next = $last_reord + ( $interval * DAY_IN_SECONDS );
+            if ( $interval > 0 && $last_ts ) {
+                $next = $last_ts + ( $interval * DAY_IN_SECONDS );
                 if ( $next <= $now + ( 7 * DAY_IN_SECONDS ) ) {
                     $due_soon++;
                 }
             }
 
-            if ( $last_purch ) {
-                $ts = strtotime( $last_purch );
-                if ( $ts && $ts >= $recent_cut ) {
-                    $recent[] = array(
-                        'id'    => $id,
-                        'title' => get_the_title( $id ),
-                        'date'  => $last_purch,
-                    );
-                }
+            if ( $last_ts && $last_ts >= $recent_cut ) {
+                $recent[] = array(
+                    'id'    => $id,
+                    'title' => get_the_title( $id ),
+                    'date'  => $last_purch,
+                );
             }
         }
 
