@@ -63,6 +63,7 @@ function pit_enqueue_frontend() {
             'filterAll'      => __( 'All', 'personal-inventory-tracker' ),
             'filterPurchased'=> __( 'Purchased', 'personal-inventory-tracker' ),
             'filterNeeded'   => __( 'Needed', 'personal-inventory-tracker' ),
+            'filterLabel'    => __( 'Filter items', 'personal-inventory-tracker' ),
             'addItem'        => __( 'Add Item', 'personal-inventory-tracker' ),
             'addName'        => __( 'Item name', 'personal-inventory-tracker' ),
             'item'           => __( 'Item', 'personal-inventory-tracker' ),
@@ -71,6 +72,13 @@ function pit_enqueue_frontend() {
             'actions'        => __( 'Actions', 'personal-inventory-tracker' ),
             'exportCsv'      => __( 'Export CSV', 'personal-inventory-tracker' ),
             'scanReceipt'    => __( 'Scan Receipt', 'personal-inventory-tracker' ),
+            'confirmDelete'  => __( 'Are you sure you want to delete this item?', 'personal-inventory-tracker' ),
+            'noItems'        => __( 'No items found. Use the form above to add items.', 'personal-inventory-tracker' ),
+            'increaseQty'    => __( 'Increase quantity', 'personal-inventory-tracker' ),
+            'decreaseQty'    => __( 'Decrease quantity', 'personal-inventory-tracker' ),
+            'delete'         => __( 'Delete item', 'personal-inventory-tracker' ),
+            'togglePurchased'=> __( 'Toggle purchased state', 'personal-inventory-tracker' ),
+            'addHelp'        => __( 'Provide an item name and quantity, then click Add Item.', 'personal-inventory-tracker' ),
         ),
     ) );
 }

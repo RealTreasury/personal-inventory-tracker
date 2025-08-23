@@ -51,17 +51,33 @@ class PIT_Admin {
         $this->category_filter();
         $this->status_filter();
         $list_table->display();
+        $confirm = esc_js( __( 'Are you sure you want to delete the selected items?', 'personal-inventory-tracker' ) );
+        echo "<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var f=document.querySelector('form');
+  if(!f){return;}
+  f.addEventListener('submit',function(e){
+    var a=f.querySelector('select[name=\"action\"]').value;
+    var a2=f.querySelector('select[name=\"action2\"]').value;
+    if((a==='delete'||a2==='delete')&&!confirm('{$confirm}')){
+      e.preventDefault();
+    }
+  });
+});
+</script>";
         echo '</form>';
         echo '</div>';
     }
 
     private function category_filter() {
         $selected = isset( $_REQUEST['pit_category'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['pit_category'] ) ) : '';
+        echo '<label for="pit_category" class="screen-reader-text">' . esc_html__( 'Filter by category', 'personal-inventory-tracker' ) . '</label>';
         wp_dropdown_categories(
             array(
                 'show_option_all' => __( 'All Categories', 'personal-inventory-tracker' ),
                 'taxonomy'       => 'pit_category',
                 'name'           => 'pit_category',
+                'id'             => 'pit_category',
                 'orderby'        => 'name',
                 'selected'       => $selected,
                 'hierarchical'   => true,
@@ -79,7 +95,8 @@ class PIT_Admin {
             'inactive'       => __( 'Inactive', 'personal-inventory-tracker' ),
         );
         $selected = isset( $_REQUEST['pit_status'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['pit_status'] ) ) : '';
-        echo '<select name="pit_status">';
+        echo '<label for="pit_status" class="screen-reader-text">' . esc_html__( 'Filter by status', 'personal-inventory-tracker' ) . '</label>';
+        echo '<select name="pit_status" id="pit_status">';
         foreach ( $statuses as $value => $label ) {
             printf( '<option value="%s" %s>%s</option>', esc_attr( $value ), selected( $selected, $value, false ), esc_html( $label ) );
         }
@@ -125,7 +142,7 @@ class PIT_Admin {
         $status    = $item_id ? get_post_meta( $item_id, 'pit_status', true ) : 'in_stock';
 
         echo '<tr><th><label for="pit_qty">' . esc_html__( 'Quantity', 'personal-inventory-tracker' ) . '</label></th>';
-        echo '<td><input name="pit_qty" id="pit_qty" type="number" value="' . esc_attr( $qty ) . '" /></td></tr>';
+        echo '<td><input name="pit_qty" id="pit_qty" type="number" value="' . esc_attr( $qty ) . '" aria-describedby="pit_qty_help" /><p id="pit_qty_help" class="description">' . esc_html__( 'Current number of items on hand.', 'personal-inventory-tracker' ) . '</p></td></tr>';
 
         echo '<tr><th><label for="pit_unit">' . esc_html__( 'Unit', 'personal-inventory-tracker' ) . '</label></th>';
         echo '<td><input name="pit_unit" id="pit_unit" type="text" value="' . esc_attr( $unit ) . '" /></td></tr>';
@@ -134,10 +151,10 @@ class PIT_Admin {
         echo '<td><input name="pit_last_purchased" id="pit_last_purchased" type="date" value="' . esc_attr( $last ) . '" /></td></tr>';
 
         echo '<tr><th><label for="pit_threshold">' . esc_html__( 'Threshold', 'personal-inventory-tracker' ) . '</label></th>';
-        echo '<td><input name="pit_threshold" id="pit_threshold" type="number" value="' . esc_attr( $threshold ) . '" /></td></tr>';
+        echo '<td><input name="pit_threshold" id="pit_threshold" type="number" value="' . esc_attr( $threshold ) . '" aria-describedby="pit_threshold_help" /><p id="pit_threshold_help" class="description">' . esc_html__( 'Minimum quantity before restock is needed.', 'personal-inventory-tracker' ) . '</p></td></tr>';
 
         echo '<tr><th><label for="pit_interval">' . esc_html__( 'Interval (days)', 'personal-inventory-tracker' ) . '</label></th>';
-        echo '<td><input name="pit_interval" id="pit_interval" type="number" value="' . esc_attr( $interval ) . '" /></td></tr>';
+        echo '<td><input name="pit_interval" id="pit_interval" type="number" value="' . esc_attr( $interval ) . '" aria-describedby="pit_interval_help" /><p id="pit_interval_help" class="description">' . esc_html__( 'Expected days between purchases.', 'personal-inventory-tracker' ) . '</p></td></tr>';
 
         $statuses = array(
             'in_stock'       => __( 'In Stock', 'personal-inventory-tracker' ),
@@ -244,7 +261,7 @@ class PIT_Admin {
         }
 
         echo '<div class="wrap"><h1>' . esc_html__( 'OCR Receipt', 'personal-inventory-tracker' ) . '</h1>';
-        echo '<input type="file" id="pit-ocr-file" accept="image/*" />';
+        echo '<label for="pit-ocr-file" class="screen-reader-text">' . esc_html__( 'Upload receipt image', 'personal-inventory-tracker' ) . '</label><input type="file" id="pit-ocr-file" accept="image/*" />';
         echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="pit_ocr_update" />';
         wp_nonce_field( 'pit_ocr_update' );
         echo '<table class="widefat" id="pit-ocr-results"><thead><tr><th>' . esc_html__( 'Line', 'personal-inventory-tracker' ) . '</th><th>' . esc_html__( 'Item', 'personal-inventory-tracker' ) . '</th><th>' . esc_html__( 'Qty', 'personal-inventory-tracker' ) . '</th></tr></thead><tbody></tbody></table>';
