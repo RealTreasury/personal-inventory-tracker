@@ -372,8 +372,8 @@ document.addEventListener('DOMContentLoaded',function(){
         include PIT_PLUGIN_DIR . 'templates/ocr-scanner.php';
         echo '</div>';
 
-        wp_enqueue_script( 'tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@2/dist/tesseract.min.js', array(), null, true );
-        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
+        wp_enqueue_script( 'pit-ocr-scanner', PIT_PLUGIN_URL . 'assets/ocr-scanner.js', array(), PIT_VERSION, true );
+        wp_script_add_data( 'pit-ocr-scanner', 'type', 'module' );
         wp_localize_script(
             'pit-ocr-scanner',
             'pitApp',

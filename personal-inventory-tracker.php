@@ -705,18 +705,6 @@ function pit_enqueue_enhanced_frontend() {
         'strategy'  => 'defer',
     ];
 
-    wp_register_script( 'react', 'https://unpkg.com/react@18/umd/react.production.min.js', [], '18.0.0', $script_args );
-    wp_register_script( 'react-dom', 'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js', [ 'react' ], '18.0.0', $script_args );
-    wp_enqueue_script( 'react' );
-    wp_enqueue_script( 'react-dom' );
-
-    wp_register_script( 'chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.js', [], '4.0.0', $script_args );
-    wp_enqueue_script( 'chartjs' );
-
-    if ( $has_ocr ) {
-        wp_register_script( 'tesseract', 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js', [], '5.0.0', $script_args );
-        wp_enqueue_script( 'tesseract' );
-    }
 
     if ( file_exists( $app_css ) ) {
         wp_register_style( 'pit-enhanced', PIT_PLUGIN_URL . 'assets/app.css', [], PIT_VERSION );
@@ -724,13 +712,9 @@ function pit_enqueue_enhanced_frontend() {
     }
 
     if ( file_exists( $app_js ) ) {
-        $deps = [ 'react', 'react-dom', 'chartjs' ];
-        if ( $has_ocr ) {
-            $deps[] = 'tesseract';
-        }
-
-        wp_register_script( 'pit-enhanced', PIT_PLUGIN_URL . 'assets/app.js', $deps, PIT_VERSION, $script_args );
+        wp_register_script( 'pit-enhanced', PIT_PLUGIN_URL . 'assets/app.js', array(), PIT_VERSION, $script_args );
         wp_enqueue_script( 'pit-enhanced' );
+        wp_script_add_data( 'pit-enhanced', 'type', 'module' );
 
         wp_localize_script( 'pit-enhanced', 'pitApp', [
             'restUrl'   => rest_url( 'pit/v2/' ),
