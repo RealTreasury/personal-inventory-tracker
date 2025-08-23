@@ -1,14 +1,15 @@
-import React, { useState, useRef, useCallback } from 'react';
+/* eslint-disable jsx-a11y/label-has-associated-control, jsx-a11y/media-has-caption */
+import React, { useState, useRef } from 'react';
 import {
   Camera, Upload, X, Check, AlertCircle,
-  Loader2, Image, FileText, Zap, Settings,
-  Plus, Minus, Eye, EyeOff, RotateCw
+  Loader2, Zap, Settings,
+  Plus
 } from 'lucide-react';
+import { loadTesseract } from '../ocr.js';
 
 const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResults, setScanResults] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [confidence, setConfidence] = useState(60);
   const [processingStage, setProcessingStage] = useState('');
@@ -75,8 +76,6 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      setSelectedImage(file);
-
       // Create preview
       const reader = new FileReader();
       reader.onload = (e) => setImagePreview(e.target.result);
@@ -93,8 +92,8 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
     setProcessingStage('Initializing...');
 
     try {
-      // Import Tesseract dynamically to avoid blocking
-      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js');
+      // Load Tesseract from local asset
+      const Tesseract = await loadTesseract();
 
       setProcessingStage('Loading OCR engine...');
 
