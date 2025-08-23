@@ -96,11 +96,101 @@ class Import_Export {
     }
 
     public static function generate_pdf( $item_ids = array() ) {
-        return '';
+        $args = array(
+            'post_type'      => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+        );
+        if ( ! empty( $item_ids ) ) {
+            $args['post__in'] = $item_ids;
+        }
+        $posts = get_posts( $args );
+
+        $lines   = array( 'Inventory Report', 'Generated: ' . current_time( 'Y-m-d H:i' ) );
+        foreach ( $posts as $post ) {
+            $qty   = get_post_meta( $post->ID, 'pit_qty', true );
+            $lines[] = get_the_title( $post ) . ' - Qty: ' . $qty;
+        }
+
+        $y       = 800;
+        $content = "BT\n/F1 12 Tf\n";
+        foreach ( $lines as $line ) {
+            $escaped  = str_replace( array( '\\', '(', ')' ), array( '\\\\', '\\(', '\\)' ), $line );
+            $content .= sprintf( "1 0 0 1 50 %d Tm (%s) Tj\n", $y, $escaped );
+            $y      -= 14;
+        }
+        $content .= "ET";
+        $len = strlen( $content );
+
+        $objects   = array();
+        $objects[] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        $objects[] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+        $objects[] = "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 4 0 R >> >> >>\nendobj\n";
+        $objects[] = "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+        $objects[] = "5 0 obj\n<< /Length $len >>\nstream\n$content\nendstream\nendobj\n";
+
+        $pdf  = "%PDF-1.4\n";
+        $xref = array();
+        $pos  = strlen( $pdf );
+        foreach ( $objects as $obj ) {
+            $xref[] = $pos;
+            $pdf   .= $obj;
+            $pos   += strlen( $obj );
+        }
+        $pdf .= "xref\n0 " . ( count( $objects ) + 1 ) . "\n0000000000 65535 f \n";
+        foreach ( $xref as $off ) {
+            $pdf .= sprintf( "%010d 00000 n \n", $off );
+        }
+        $pdf .= "trailer\n<< /Size " . ( count( $objects ) + 1 ) . " /Root 1 0 R >>\nstartxref\n$pos\n%%EOF";
+
+        return $pdf;
     }
 
     public static function generate_excel( $item_ids = array() ) {
-        return '';
+        $args = array(
+            'post_type'      => 'pit_item',
+            'posts_per_page' => -1,
+            'post_status'    => 'any',
+        );
+        if ( ! empty( $item_ids ) ) {
+            $args['post__in'] = $item_ids;
+        }
+        $posts   = get_posts( $args );
+        $headers = self::get_headers();
+
+        $html = '<table><tr>';
+        foreach ( $headers as $header ) {
+            $html .= '<th>' . esc_html( $header ) . '</th>';
+        }
+        $html .= '</tr>';
+
+        foreach ( $posts as $post ) {
+            $category = wp_get_post_terms( $post->ID, 'pit_category', array( 'fields' => 'slugs' ) );
+            $data     = array(
+                'id'                      => $post->ID,
+                'name'                    => $post->post_title,
+                'category_slug'           => $category ? $category[0] : '',
+                'qty'                     => get_post_meta( $post->ID, 'pit_qty', true ),
+                'unit'                    => get_post_meta( $post->ID, 'pit_unit', true ),
+                'reorder_threshold'       => get_post_meta( $post->ID, 'pit_threshold', true ),
+                'estimated_interval_days' => get_post_meta( $post->ID, 'pit_interval', true ),
+                'last_purchased'          => get_post_meta( $post->ID, 'pit_last_purchased', true ),
+                'notes'                   => get_post_meta( $post->ID, 'pit_notes', true ),
+                'image_url'               => get_the_post_thumbnail_url( $post->ID, 'full' ),
+            );
+            $html .= '<tr>';
+            foreach ( $headers as $header ) {
+                $value = isset( $data[ $header ] ) ? $data[ $header ] : '';
+                if ( is_string( $value ) ) {
+                    $value = wp_unslash( $value );
+                }
+                $html .= '<td>' . esc_html( $value ) . '</td>';
+            }
+            $html .= '</tr>';
+        }
+
+        $html .= '</table>';
+        return $html;
     }
 
     public static function import_from_csv_string( $csv, $mapping ) {

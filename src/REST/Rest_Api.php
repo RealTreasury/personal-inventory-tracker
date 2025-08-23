@@ -231,7 +231,7 @@ class Rest_Api {
                     'format' => array(
                         'type'              => 'string',
                         'default'           => 'json',
-                        'enum'              => array( 'json', 'csv', 'pdf' ),
+                        'enum'              => array( 'json', 'csv', 'pdf', 'excel' ),
                         'sanitize_callback' => 'sanitize_key',
                         'validate_callback' => 'rest_validate_request_arg',
                     ),
@@ -523,6 +523,10 @@ class Rest_Api {
         if ( 'pdf' === $format ) {
             $pdf = \RealTreasury\Inventory\Import_Export::generate_pdf();
             return new \WP_REST_Response( $pdf, 200, array( 'Content-Type' => 'application/pdf' ) );
+        }
+        if ( 'excel' === $format ) {
+            $excel = \RealTreasury\Inventory\Import_Export::generate_excel();
+            return new \WP_REST_Response( $excel, 200, array( 'Content-Type' => 'application/vnd.ms-excel; charset=utf-8' ) );
         }
         return $this->get_items( $request );
     }
