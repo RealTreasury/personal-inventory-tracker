@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Database {
 
-    const SCHEMA_VERSION = '1.0';
+    const SCHEMA_VERSION = '1.1';
 
     /**
      * Run database migrations.
@@ -22,6 +22,17 @@ class Database {
             return;
         }
 
+        self::migrate_schema();
+        self::migrate_data( $installed_version );
+        self::cleanup_deprecated_meta_keys();
+
+        update_option( 'pit_db_version', self::SCHEMA_VERSION );
+    }
+
+    /**
+     * Create or update database schema items.
+     */
+    private static function migrate_schema() {
         global $wpdb;
         $postmeta = $wpdb->postmeta;
 
@@ -36,8 +47,50 @@ class Database {
                 $wpdb->query( $sql );
             }
         }
+    }
 
-        update_option( 'pit_db_version', self::SCHEMA_VERSION );
+    /**
+     * Run data migrations based on a previously installed version.
+     *
+     * @param string $from_version Installed schema version.
+     */
+    private static function migrate_data( $from_version ) {
+        global $wpdb;
+
+        if ( version_compare( $from_version, '1.1', '<' ) ) {
+            $postmeta = $wpdb->postmeta;
+
+            // Rename legacy meta keys to new prefixed versions.
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_qty' WHERE meta_key = 'qty'" );
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_threshold' WHERE meta_key = 'reorder_threshold'" );
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_interval' WHERE meta_key = 'reorder_interval'" );
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_last_purchased' WHERE meta_key = 'last_reordered'" );
+
+            // Rename deprecated prefixed keys.
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_threshold' WHERE meta_key = 'pit_reorder_threshold'" );
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_interval' WHERE meta_key = 'pit_reorder_interval'" );
+            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_last_purchased' WHERE meta_key = 'pit_last_reordered'" );
+        }
+    }
+
+    /**
+     * Remove deprecated meta keys from the database.
+     */
+    public static function cleanup_deprecated_meta_keys() {
+        global $wpdb;
+        $deprecated = array(
+            'qty',
+            'reorder_threshold',
+            'reorder_interval',
+            'last_reordered',
+            'pit_reorder_threshold',
+            'pit_reorder_interval',
+            'pit_last_reordered',
+        );
+
+        foreach ( $deprecated as $key ) {
+            $wpdb->delete( $wpdb->postmeta, array( 'meta_key' => $key ) );
+        }
     }
 
     /**
