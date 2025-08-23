@@ -1,0 +1,22 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 2rem;
+}
+
+.form-field {
+  margin-bottom: 1rem;
+}
+
+.helper-text {
+  display: block;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.empty-state {
+  color: #777;
+}
+
+button {
+  margin-top: 0.5rem;
+}

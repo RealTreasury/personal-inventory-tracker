@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inventory Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Inventory Admin</h1>
+  <form id="item-form" aria-label="Add inventory item">
+    <div class="form-field">
+      <label for="item-name">Item Name</label>
+      <input id="item-name" type="text" required aria-describedby="name-help">
+      <small id="name-help" class="helper-text">Enter descriptive item name.</small>
+    </div>
+    <div class="form-field">
+      <label for="item-qty">Quantity</label>
+      <input id="item-qty" type="number" required min="1" aria-describedby="qty-help">
+      <small id="qty-help" class="helper-text">Quantity must be at least 1.</small>
+    </div>
+    <button type="submit">Add Item</button>
+  </form>
+
+  <section aria-live="polite">
+    <h2>Inventory</h2>
+    <p id="admin-empty" class="empty-state">No items yet. Use the form above to add items.</p>
+    <ul id="admin-list"></ul>
+    <button id="bulk-increment" aria-label="Increase quantity for all items">Increase all quantities</button>
+  </section>
+
+  <script src="admin.js"></script>
+</body>
+</html>
