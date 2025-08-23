@@ -19,6 +19,7 @@ define( 'PIT_PLUGIN_BASENAME', plugin_basename( PIT_PLUGIN_FILE ) );
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cpt.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-taxonomy.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-rest.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-import-export.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-admin.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-reports.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
@@ -46,6 +47,7 @@ add_action( 'rest_api_init', function() {
     $rest = new PIT_REST();
     $rest->register_routes();
 } );
+add_action( 'rest_api_init', [ 'PIT_Import_Export', 'register_rest_routes' ] );
 add_action( 'plugins_loaded', function() {
     ( new PIT_Admin() )->init();
     PIT_Cron::init();
