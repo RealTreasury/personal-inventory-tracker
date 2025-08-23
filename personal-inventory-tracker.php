@@ -27,6 +27,7 @@ require_once PIT_PLUGIN_DIR . 'includes/class-pit-reports.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-database.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 
 // Enhanced REST API Class
@@ -885,7 +886,9 @@ function pit_activate() {
     add_option('pit_ocr_confidence', 60);
     add_option('pit_currency', '$');
     add_option('pit_version', PIT_VERSION);
-    
+
+    PIT_Database::migrate();
+
     flush_rewrite_rules();
 }
 
@@ -903,6 +906,7 @@ register_deactivation_hook(PIT_PLUGIN_FILE, 'pit_deactivate');
 // Initialize
 add_action('init', [PIT_CPT::class, 'register']);
 add_action('init', [PIT_Taxonomy::class, 'register']);
+add_action('plugins_loaded', [PIT_Database::class, 'migrate']);
 add_action('plugins_loaded', function() {
     pit_init_enhanced();
     (new PIT_Admin())->init();
