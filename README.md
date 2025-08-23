@@ -74,6 +74,16 @@ Use WP-CLI to manage inventory from the command line.
 - Smaller images process faster but must remain legible.
 - Adjust the `minConfidence` parameter in JS helpers for accuracy vs. noise.
 
+## Testing
+Playwright end-to-end tests validate core user flows. The fixtures start a disposable WordPress environment, seed required data, and clean up after each run.
+
+Run the tests with:
+
+```
+npm install
+npx playwright test
+```
+
 ## Privacy & Security
 - OCR runs entirely in the browser; receipt images are never uploaded to the server.
 - Inventory data resides in your WordPress database—apply regular WordPress security best practices.
