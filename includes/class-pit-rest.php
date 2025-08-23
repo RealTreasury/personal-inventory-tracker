@@ -5,6 +5,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class PIT_REST {
 
+    protected function verify_nonce( $request ) {
+        $nonce = $request->get_header( 'X-WP-Nonce' );
+        if ( ! $nonce || ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+            return new WP_Error( 'pit_invalid_nonce', __( 'Invalid nonce.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+        return true;
+    }
+
     public function register_routes() {
         register_rest_route(
             'pit/v1',
@@ -42,10 +50,18 @@ class PIT_REST {
     }
 
     public function permissions_read( $request ) {
+        $nonce = $this->verify_nonce( $request );
+        if ( true !== $nonce ) {
+            return $nonce;
+        }
         return current_user_can( 'read' );
     }
 
     public function permissions_write( $request ) {
+        $nonce = $this->verify_nonce( $request );
+        if ( true !== $nonce ) {
+            return $nonce;
+        }
         if ( get_option( 'pit_read_only' ) ) {
             return new WP_Error( 'pit_read_only', __( 'Read-only mode enabled.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
         }
@@ -55,7 +71,7 @@ class PIT_REST {
     protected function prepare_item( $post ) {
         return array(
             'id'        => $post->ID,
-            'title'     => $post->post_title,
+            'title'     => sanitize_text_field( $post->post_title ),
             'qty'       => (int) get_post_meta( $post->ID, 'qty', true ),
             'purchased' => (bool) get_post_meta( $post->ID, 'purchased', true ),
         );

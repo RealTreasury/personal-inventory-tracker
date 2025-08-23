@@ -298,12 +298,16 @@ class PIT_Admin {
         if ( get_option( 'pit_intro_dismissed' ) ) {
             return;
         }
-        $dismiss_url = add_query_arg( 'pit_dismiss_intro', 1 );
+        $dismiss_url = wp_nonce_url( add_query_arg( 'pit_dismiss_intro', 1 ), 'pit_dismiss_intro' );
         echo '<div class="notice notice-info is-dismissible"><p>' . esc_html__( 'Welcome to Personal Inventory Tracker!', 'personal-inventory-tracker' ) . '</p><p><a href="' . esc_url( $dismiss_url ) . '">' . esc_html__( 'Dismiss', 'personal-inventory-tracker' ) . '</a></p></div>';
     }
 
     public function maybe_dismiss_intro() {
         if ( isset( $_GET['pit_dismiss_intro'] ) ) {
+            if ( ! current_user_can( 'manage_options' ) ) {
+                return;
+            }
+            check_admin_referer( 'pit_dismiss_intro' );
             update_option( 'pit_intro_dismissed', 1 );
         }
     }
