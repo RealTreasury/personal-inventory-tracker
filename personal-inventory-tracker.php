@@ -26,6 +26,7 @@ require_once PIT_PLUGIN_DIR . 'includes/class-pit-admin.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-reports.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-cron.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-settings.php';
+require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
 require_once PIT_PLUGIN_DIR . 'pit-functions.php';
 
 // Enhanced REST API Class
