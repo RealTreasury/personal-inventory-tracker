@@ -1,4 +1,6 @@
 <?php
+namespace PIT\Reports;
+
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
@@ -7,7 +9,7 @@ if ( ! defined( 'DAY_IN_SECONDS' ) ) {
     define( 'DAY_IN_SECONDS', 86400 );
 }
 
-class PIT_Reports {
+class Reports {
 
     /**
      * Retrieve summary data from cache or compute it.
@@ -15,7 +17,7 @@ class PIT_Reports {
      * @return array
      */
     public function get_summary() {
-        return PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
+        return \PIT_Cache::get_or_set( 'pit_reco_summary', array( $this, 'calculate_summary' ) );
     }
 
     /**
