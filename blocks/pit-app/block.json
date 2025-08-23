@@ -1,0 +1,13 @@
+{
+  "apiVersion": 2,
+  "name": "pit/app",
+  "title": "Personal Inventory App",
+  "category": "widgets",
+  "icon": "archive",
+  "description": "Displays the Personal Inventory Tracker application.",
+  "editorScript": "file:./index.js",
+  "style": "file:./style.css",
+  "supports": {
+    "html": false
+  }
+}
