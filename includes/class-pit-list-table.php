@@ -135,14 +135,18 @@ class PIT_List_Table extends WP_List_Table {
     }
 
     public function process_bulk_action() {
-        if ( 'delete' === $this->current_action() && ! empty( $_REQUEST['item_ids'] ) ) {
-            foreach ( (array) $_REQUEST['item_ids'] as $item_id ) {
-                wp_delete_post( absint( $item_id ), true );
+        $action = $this->current_action();
+        if ( $action && ! empty( $_REQUEST['item_ids'] ) ) {
+            check_admin_referer( 'bulk-' . $this->_args['plural'] );
+            if ( 'delete' === $action ) {
+                foreach ( (array) $_REQUEST['item_ids'] as $item_id ) {
+                    wp_delete_post( absint( $item_id ), true );
+                }
             }
-        }
 
-        if ( 'export' === $this->current_action() && ! empty( $_REQUEST['item_ids'] ) ) {
-            $this->export_items( array_map( 'absint', (array) $_REQUEST['item_ids'] ) );
+            if ( 'export' === $action ) {
+                $this->export_items( array_map( 'absint', (array) $_REQUEST['item_ids'] ) );
+            }
         }
     }
 
