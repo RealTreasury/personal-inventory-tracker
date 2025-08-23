@@ -129,11 +129,30 @@ class Import_Export {
     }
 
     public static function generate_pdf( $item_ids = array() ) {
-        return '';
+        require_once dirname( __DIR__ ) . '/lib/fpdf.php';
+        $csv   = self::generate_csv( $item_ids );
+        $lines = array_map(
+            'str_getcsv',
+            preg_split( '/[\r\n]+/', trim( $csv ) )
+        );
+        $pdf = new \FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont( 'Arial', '', 12 );
+        foreach ( $lines as $line ) {
+            $pdf->Cell( 0, 7, implode( ' | ', $line ), 0, 1 );
+        }
+        return $pdf->Output( 'S' );
     }
 
     public static function generate_excel( $item_ids = array() ) {
-        return '';
+        require_once dirname( __DIR__ ) . '/lib/SimpleXLSXGen.php';
+        $csv  = self::generate_csv( $item_ids );
+        $rows = array_map(
+            'str_getcsv',
+            preg_split( '/[\r\n]+/', trim( $csv ) )
+        );
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray( $rows );
+        return (string) $xlsx;
     }
 
     public static function import_from_csv_string( $csv, $mapping ) {

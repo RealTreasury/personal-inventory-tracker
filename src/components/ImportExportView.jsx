@@ -59,7 +59,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
     export: {
       csv: { label: 'CSV File', icon: FileSpreadsheet, description: 'Comma-separated values' },
       json: { label: 'JSON File', icon: FileJson, description: 'JavaScript Object Notation' },
-      excel: { label: 'Excel File', icon: FileSpreadsheet, description: 'Microsoft Excel (coming soon)' },
+      excel: { label: 'Excel File', icon: FileSpreadsheet, description: 'Microsoft Excel' },
       pdf: { label: 'PDF Report', icon: FileText, description: 'Printable inventory report' }
     }
   };
@@ -241,6 +241,16 @@ const ImportExportView = ({ onItemsUpdated }) => {
       } else if (exportFormat === 'csv') {
         const data = await response.text();
         downloadFile(data, `inventory-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+      } else if (exportFormat === 'excel') {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory-${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       } else if (exportFormat === 'pdf') {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -517,7 +527,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
                         exportFormat === key
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
-                      } ${key === 'excel' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      }`}
                     >
                       <div className="flex items-center space-x-3">
                         <format.icon className={`h-6 w-6 ${exportFormat === key ? 'text-blue-600' : 'text-gray-400'}`} />
