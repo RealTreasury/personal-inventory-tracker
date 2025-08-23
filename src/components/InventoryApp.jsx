@@ -5,6 +5,7 @@ import {
   Filter, Sort, Grid, List, Settings, Home, ShoppingCart,
   Calendar, PieChart, Activity, Trash2, Edit, Eye
 } from 'lucide-react';
+import { buildCSV } from '../utils/csvBuilder.js';
 
 const AnalyticsView = lazy(() => import('./AnalyticsView.jsx'));
 const OCRScannerView = lazy(() => import('./OCRScannerView.jsx'));
@@ -358,11 +359,12 @@ const InventoryApp = () => {
 
   // Export CSV function
   const exportCSV = () => {
-    const csvContent = [
+    const rows = [
       ['Title', 'Quantity', 'Purchased'],
       ...items.map(item => [item.title, item.qty || 0, item.purchased ? 'Yes' : 'No'])
-    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    
+    ];
+
+    const csvContent = buildCSV(rows);
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
