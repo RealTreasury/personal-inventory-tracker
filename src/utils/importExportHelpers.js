@@ -1,3 +1,5 @@
+import Papa from 'papaparse';
+
 export function parseCSV(file, defaultMappings) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -5,23 +7,12 @@ export function parseCSV(file, defaultMappings) {
       try {
         // Remove UTF-8 BOM if present to ensure clean parsing
         const text = e.target.result.replace(/^\uFEFF/, '');
-        const lines = text
-          .split('\n')
-          .map((line) => line.trim())
-          .filter((line) => line);
-        const headers = lines[0]
-          .split(',')
-          .map((h) => h.replace(/["']/g, '').trim());
-        const data = lines.slice(1).map((line) => {
-          const values = line
-            .split(',')
-            .map((v) => v.replace(/["']/g, '').trim());
-          const row = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index] || '';
-          });
-          return row;
-        });
+        const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+        if (results.errors.length) {
+          throw new Error('Failed to parse CSV file');
+        }
+        const data = results.data;
+        const headers = results.meta.fields || [];
         const mapping = {};
         headers.forEach((header) => {
           const lowerHeader = header.toLowerCase();

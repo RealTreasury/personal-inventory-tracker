@@ -57,6 +57,7 @@ Milk,1,2,14,1700000000
 ```
 
 A copy of this sample CSV is available at [`docs/sample.csv`](docs/sample.csv).
+This parser supports quoted fields, embedded commas, and both LF and CRLF line endings.
 
 ## CLI Commands
 Use WP-CLI to manage inventory from the command line.
