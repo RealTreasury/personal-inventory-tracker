@@ -6,7 +6,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PIT_CPT {
 
     public static function register() {
-        // Register custom post type.
+        register_post_type(
+            'pit_item',
+            [
+                'labels' => [
+                    'name'          => __( 'Items', 'personal-inventory-tracker' ),
+                    'singular_name' => __( 'Item', 'personal-inventory-tracker' ),
+                ],
+                'public'      => false,
+                'show_ui'     => true,
+                'supports'    => [ 'title', 'editor' ],
+                'show_in_rest'=> true,
+            ]
+        );
     }
 
     public static function activate() {

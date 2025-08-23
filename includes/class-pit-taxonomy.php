@@ -6,7 +6,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 class PIT_Taxonomy {
 
     public static function register() {
-        // Register custom taxonomy.
+        register_taxonomy(
+            'pit_category',
+            'pit_item',
+            [
+                'labels' => [
+                    'name'          => __( 'Categories', 'personal-inventory-tracker' ),
+                    'singular_name' => __( 'Category', 'personal-inventory-tracker' ),
+                ],
+                'hierarchical' => true,
+                'show_ui'      => true,
+                'show_in_rest' => true,
+            ]
+        );
     }
 
     public static function activate() {
