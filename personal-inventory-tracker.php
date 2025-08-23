@@ -876,7 +876,8 @@ function pit_init_enhanced() {
     // Register shortcode
     add_shortcode('pit_enhanced', 'pit_enhanced_shortcode');
     add_shortcode('pit_dashboard', 'pit_enhanced_shortcode');
-    
+    add_shortcode('personal_inventory', 'pit_enhanced_shortcode');
+
     // Backward compatibility
     add_shortcode('pit_app', 'pit_enhanced_shortcode');
 }
