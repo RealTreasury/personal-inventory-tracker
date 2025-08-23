@@ -18,16 +18,6 @@ const baseConfig = {
 
 const artifactsDir = path.join(__dirname, 'artifacts');
 
-function generateEntry() {
-  if (!fs.existsSync(artifactsDir)) return;
-  const scripts = fs
-    .readdirSync(artifactsDir)
-    .filter(f => f.endsWith('.js'))
-    .sort()
-    .map(f => fs.readFileSync(path.join(artifactsDir, f), 'utf8'));
-  fs.writeFileSync(path.join(__dirname, 'src', 'enhanced-app.js'), scripts.join('\n'));
-}
-
 function processCss() {
   const cssFile = path.join(artifactsDir, 'enhanced_css.css');
   if (!fs.existsSync(cssFile)) return;
@@ -37,7 +27,13 @@ function processCss() {
 }
 
 const builds = [
-  { entryPoints: ['src/enhanced-app.js'], outfile: 'assets/app.js', globalName: 'PITApp' },
+  {
+    entryPoints: ['src/frontend-app.jsx'],
+    outfile: 'assets/app.js',
+    globalName: 'PITApp',
+    loader: { '.jsx': 'jsx' },
+    external: ['react', 'react-dom'],
+  },
   { entryPoints: ['src/admin.js'], outfile: 'assets/admin.js', globalName: 'PITAdmin' },
   { entryPoints: ['src/ocr.js'], outfile: 'assets/ocr.js', globalName: 'PITOcr', external: ['tesseract.js'] },
   { entryPoints: ['src/import-export.jsx'], outfile: 'assets/import-export.js', globalName: 'PITImportExport', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
@@ -62,7 +58,6 @@ async function build(config) {
 }
 
 async function run() {
-  generateEntry();
   processCss();
   const enhancedReadme = `
 # Personal Inventory Tracker Enhanced
