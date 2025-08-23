@@ -48,6 +48,29 @@ const builds = [
   },
 ];
 
+function addPhpGuards() {
+  const blocksDir = path.join(__dirname, 'blocks');
+
+  function handleDir(dir) {
+    if (!fs.existsSync(dir)) return;
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        handleDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.asset.php')) {
+        let content = fs.readFileSync(fullPath, 'utf8');
+        if (!content.includes("if ( ! defined( 'ABSPATH' ) ) { exit; }")) {
+          content = content.replace('<?php\n', "<?php\nif ( ! defined( 'ABSPATH' ) ) { exit; }\n");
+          fs.writeFileSync(fullPath, content);
+        }
+      }
+    }
+  }
+
+  handleDir(blocksDir);
+}
+
 async function build(config) {
   if (isWatch) {
     const ctx = await esbuild.context(config);
@@ -80,6 +103,7 @@ GPL-2.0+
   fs.writeFileSync(path.join(__dirname, 'README-ENHANCED.md'), enhancedReadme.trim() + '\n');
 
   await Promise.all(builds.map(cfg => build({ ...baseConfig, ...cfg })));
+  addPhpGuards();
 }
 
 run().catch(err => {
