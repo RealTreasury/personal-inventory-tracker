@@ -25,10 +25,13 @@ class Settings {
             'unit_list'         => array(),
             'default_interval'  => 0,
             'frontend_read_only'=> 0,
+            'public_access'    => 0,
+            'read_only_mode'   => 0,
             'ocr_regex'         => '',
             'ocr_min_confidence'=> 60,
             'gpt_api_key'       => '',
             'auto_categorize'   => 0,
+            'currency'          => '$',
         );
     }
 
@@ -72,6 +75,22 @@ class Settings {
         );
 
         add_settings_field(
+            'public_access',
+            __( 'Public Access', 'personal-inventory-tracker' ),
+            array( __CLASS__, 'field_public_access' ),
+            'pit_settings',
+            'pit_settings_main'
+        );
+
+        add_settings_field(
+            'read_only_mode',
+            __( 'Read-Only Mode', 'personal-inventory-tracker' ),
+            array( __CLASS__, 'field_read_only_mode' ),
+            'pit_settings',
+            'pit_settings_main'
+        );
+
+        add_settings_field(
             'ocr_regex',
             __( 'OCR Parsing Regex', 'personal-inventory-tracker' ),
             array( __CLASS__, 'field_ocr_regex' ),
@@ -99,6 +118,14 @@ class Settings {
             'auto_categorize',
             __( 'Auto-categorize Items', 'personal-inventory-tracker' ),
             array( __CLASS__, 'field_auto_categorize' ),
+            'pit_settings',
+            'pit_settings_main'
+        );
+
+        add_settings_field(
+            'currency',
+            __( 'Currency Symbol', 'personal-inventory-tracker' ),
+            array( __CLASS__, 'field_currency' ),
             'pit_settings',
             'pit_settings_main'
         );
@@ -176,6 +203,26 @@ class Settings {
         );
     }
 
+    public static function field_public_access() {
+        $options = self::get_settings();
+        printf(
+            '<label><input type="checkbox" name="%s[public_access]" value="1" %s /> %s</label>',
+            esc_attr( self::OPTION_NAME ),
+            checked( $options['public_access'], 1, false ),
+            esc_html__( 'Allow non-logged-in users to view inventory', 'personal-inventory-tracker' )
+        );
+    }
+
+    public static function field_read_only_mode() {
+        $options = self::get_settings();
+        printf(
+            '<label><input type="checkbox" name="%s[read_only_mode]" value="1" %s /> %s</label>',
+            esc_attr( self::OPTION_NAME ),
+            checked( $options['read_only_mode'], 1, false ),
+            esc_html__( 'Disable editing for all users', 'personal-inventory-tracker' )
+        );
+    }
+
     public static function field_gpt_api_key() {
         $options = self::get_settings();
         printf(
@@ -192,6 +239,15 @@ class Settings {
             esc_attr( self::OPTION_NAME ),
             checked( $options['auto_categorize'], 1, false ),
             esc_html__( 'Suggest categories using GPT when missing', 'personal-inventory-tracker' )
+        );
+    }
+
+    public static function field_currency() {
+        $options = self::get_settings();
+        printf(
+            '<input type="text" name="%s[currency]" value="%s" class="regular-text" />',
+            esc_attr( self::OPTION_NAME ),
+            esc_attr( $options['currency'] )
         );
     }
 
@@ -217,6 +273,9 @@ class Settings {
 
         $output['gpt_api_key']     = isset( $input['gpt_api_key'] ) ? sanitize_text_field( $input['gpt_api_key'] ) : '';
         $output['auto_categorize'] = ! empty( $input['auto_categorize'] ) ? 1 : 0;
+        $output['public_access']   = ! empty( $input['public_access'] ) ? 1 : 0;
+        $output['read_only_mode']  = ! empty( $input['read_only_mode'] ) ? 1 : 0;
+        $output['currency']        = isset( $input['currency'] ) ? sanitize_text_field( $input['currency'] ) : '$';
 
         return $output;
     }
