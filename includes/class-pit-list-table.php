@@ -56,8 +56,16 @@ class PIT_List_Table extends WP_List_Table {
 
     public function column_name( $item ) {
         $edit_link   = admin_url( 'admin.php?page=pit_add_item&item_id=' . absint( $item['ID'] ) );
-        $adjust_link = wp_nonce_url( admin_url( 'admin-post.php?action=pit_quick_adjust&item_id=' . absint( $item['ID'] ) ), 'pit_quick_adjust_' . $item['ID'] );
-        $purchase_link = wp_nonce_url( admin_url( 'admin-post.php?action=pit_mark_purchased&item_id=' . absint( $item['ID'] ) ), 'pit_mark_purchased_' . $item['ID'] );
+        $adjust_link   = wp_nonce_url(
+            admin_url( 'admin-post.php?action=pit_quick_adjust&item_id=' . absint( $item['ID'] ) ),
+            'pit_quick_adjust_' . $item['ID'],
+            'pit_nonce'
+        );
+        $purchase_link = wp_nonce_url(
+            admin_url( 'admin-post.php?action=pit_mark_purchased&item_id=' . absint( $item['ID'] ) ),
+            'pit_mark_purchased_' . $item['ID'],
+            'pit_nonce'
+        );
 
         $actions = array(
             'edit'           => '<a href="' . esc_url( $edit_link ) . '">' . __( 'Edit', 'personal-inventory-tracker' ) . '</a>',
