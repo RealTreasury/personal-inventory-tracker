@@ -59,7 +59,7 @@ const ImportExportView = ({ onItemsUpdated }) => {
     export: {
       csv: { label: 'CSV File', icon: FileSpreadsheet, description: 'Comma-separated values' },
       json: { label: 'JSON File', icon: FileJson, description: 'JavaScript Object Notation' },
-      excel: { label: 'Excel File', icon: FileSpreadsheet, description: 'Microsoft Excel (coming soon)' },
+      excel: { label: 'Excel File', icon: FileSpreadsheet, description: 'Microsoft Excel' },
       pdf: { label: 'PDF Report', icon: FileText, description: 'Printable inventory report' }
     }
   };
@@ -247,6 +247,16 @@ const ImportExportView = ({ onItemsUpdated }) => {
         const a = document.createElement('a');
         a.href = url;
         a.download = `inventory-report-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else if (exportFormat === 'excel') {
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `inventory-${new Date().toISOString().split('T')[0]}.xls`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
