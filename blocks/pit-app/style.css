@@ -434,23 +434,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* Import/Export Styles */
-.pit-import-area {
-  background: white;
-  border-radius: var(--radius-xl);
-  padding: 2rem;
-  border: 2px dashed var(--gray-300);
-  text-align: center;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.pit-import-area:hover,
-.pit-import-area.dragover {
-  border-color: var(--primary);
-  background: var(--primary-light);
-}
-
 /* Loading States */
 .pit-loading {
   display: flex;

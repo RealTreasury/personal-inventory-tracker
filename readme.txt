@@ -8,7 +8,7 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Manage personal inventory with OCR-powered receipt scanning and CSV import/export.
+Manage personal inventory with OCR-powered receipt scanning.
 
 == Description ==
 Personal Inventory Tracker helps households keep track of items using a custom post type and REST API endpoints. The plugin bundles Tesseract.js for client-side OCR so receipts can be scanned in the browser and item lines suggested automatically.
@@ -17,7 +17,6 @@ Personal Inventory Tracker helps households keep track of items using a custom p
 * Custom post type for inventory items.
 * REST API for integrations or front-end updates.
 * Client-side OCR for extracting items from receipts.
-* CSV import and export of inventory data.
 * Cron-based reorder reminders.
 
 == Requirements ==
@@ -33,14 +32,12 @@ Personal Inventory Tracker helps households keep track of items using a custom p
 4. Configure settings under **Settings → Personal Inventory**.
 
 == Quick Start ==
-1. Prepare a CSV file with your inventory (see format below or `docs/sample.csv`).
-2. Import the CSV via the Personal Inventory admin page or add items manually.
-3. Add one of the following shortcodes to a page to display the inventory interface:
+1. Add one of the following shortcodes to a page to display the inventory interface:
    `[personal_inventory]`, `[pit_enhanced]`, `[pit_dashboard]`, or `[pit_app]` (deprecated).
-4. Choose your front-end mode:
+2. Choose your front-end mode:
    * **Read-only:** inventory is displayed but cannot be changed.
    * **Write:** authenticated users can modify inventory via the REST API.
-5. Use the OCR tool to scan receipts and pre-fill item fields.
+3. Use the OCR tool to scan receipts and pre-fill item fields.
 
 == Shortcodes ==
 The plugin registers several shortcodes that render the same inventory interface:

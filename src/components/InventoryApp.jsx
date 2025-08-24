@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
-  Search, Plus, Upload, Download, Camera, BarChart3,
+  Search, Plus, Camera, BarChart3,
   TrendingUp, Package, AlertTriangle, CheckCircle,
   Filter, Sort, Grid, List, Settings, Home, ShoppingCart,
   Calendar, PieChart, Activity, Trash2, Edit, Eye
 } from 'lucide-react';
-import { buildCSV } from '../utils/csvBuilder.js';
-
 const AnalyticsView = lazy(() => import('./AnalyticsView.jsx'));
 const OCRScannerView = lazy(() => import('./OCRScannerView.jsx'));
-const ImportExportView = lazy(() => import('./ImportExportView.jsx'));
 
 // Enhanced Inventory Management App
 const InventoryApp = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState('dashboard'); // dashboard, inventory, analytics, scan, import
+  const [view, setView] = useState('dashboard'); // dashboard, inventory, analytics, scan
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // grid, list
@@ -75,8 +72,7 @@ const InventoryApp = () => {
               { key: 'dashboard', icon: Home, label: 'Dashboard' },
               { key: 'inventory', icon: Package, label: 'Inventory' },
               { key: 'analytics', icon: BarChart3, label: 'Analytics' },
-              { key: 'scan', icon: Camera, label: 'Scan' },
-              { key: 'import', icon: Upload, label: 'Import' }
+              { key: 'scan', icon: Camera, label: 'Scan' }
             ].map(({ key, icon: Icon, label }) => (
               <button
                 key={key}
@@ -183,13 +179,6 @@ const InventoryApp = () => {
             >
               <BarChart3 className="h-6 w-6 mx-auto mb-2 text-purple-600" />
               <span className="text-sm font-medium text-gray-900">View Analytics</span>
-            </button>
-            <button
-              onClick={() => exportCSV()}
-              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-center"
-            >
-              <Download className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-              <span className="text-sm font-medium text-gray-900">Export Data</span>
             </button>
           </div>
         </div>
@@ -357,23 +346,6 @@ const InventoryApp = () => {
     );
   };
 
-  // Export CSV function
-  const exportCSV = () => {
-    const rows = [
-      ['Title', 'Quantity', 'Purchased'],
-      ...items.map(item => [item.title, item.qty || 0, item.purchased ? 'Yes' : 'No'])
-    ];
-
-    const csvContent = buildCSV(rows);
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'inventory.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -391,7 +363,6 @@ const InventoryApp = () => {
           {view === 'inventory' && <InventoryView />}
           {view === 'analytics' && <AnalyticsView />}
           {view === 'scan' && <OCRScannerView items={items} />}
-          {view === 'import' && <ImportExportView onItemsUpdated={fetchItems} />}
         </Suspense>
       </main>
     </div>

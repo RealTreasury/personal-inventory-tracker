@@ -28,7 +28,6 @@ class Admin {
         add_menu_page( __( 'Inventory (PIT)', 'personal-inventory-tracker' ), __( 'Inventory (PIT)', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ), 'dashicons-archive', 26 );
         add_submenu_page( 'pit_dashboard', __( 'Items', 'personal-inventory-tracker' ), __( 'Items', 'personal-inventory-tracker' ), $cap, 'pit_items', array( $this, 'items_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Add/Edit Item', 'personal-inventory-tracker' ), __( 'Add/Edit Item', 'personal-inventory-tracker' ), $cap, 'pit_add_item', array( $this, 'add_item_page' ) );
-        add_submenu_page( 'pit_dashboard', __( 'Import/Export', 'personal-inventory-tracker' ), __( 'Import/Export', 'personal-inventory-tracker' ), $cap, 'pit_import_export', array( $this, 'import_export_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'OCR Receipt', 'personal-inventory-tracker' ), __( 'OCR Receipt', 'personal-inventory-tracker' ), $cap, 'pit_ocr_receipt', array( $this, 'ocr_receipt_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Shopping List', 'personal-inventory-tracker' ), __( 'Shopping List', 'personal-inventory-tracker' ), $cap, 'pit_shopping_list', array( $this, 'shopping_list_page' ) );
         add_submenu_page( 'pit_dashboard', __( 'Analytics', 'personal-inventory-tracker' ), __( 'Analytics', 'personal-inventory-tracker' ), $cap, 'pit_analytics', array( $this, 'analytics_page' ) );
@@ -283,29 +282,6 @@ document.addEventListener('DOMContentLoaded',function(){
         exit;
     }
 
-    public function import_export_page() {
-        if ( ! current_user_can( 'manage_inventory_items' ) ) {
-            wp_die(
-                esc_html__( 'You do not have permission to access this page.', 'personal-inventory-tracker' ),
-                '',
-                array( 'response' => 403 )
-            );
-        }
-
-        echo '<div class="wrap"><h1>' . esc_html__( 'Import/Export', 'personal-inventory-tracker' ) . '</h1>';
-        include PIT_PLUGIN_DIR . 'templates/import-export.php';
-        echo '</div>';
-
-        wp_enqueue_script( 'pit-import-export', PIT_PLUGIN_URL . 'assets/import-export.js', array( 'react', 'react-dom' ), PIT_VERSION, true );
-        wp_localize_script( 'pit-import-export', 'pitApp', array(
-            'restUrl'      => esc_url_raw( rest_url( 'pit/v2/' ) ),
-            'nonce'        => wp_create_nonce( 'wp_rest' ),
-            'capabilities' => array(
-                  'import' => current_user_can( 'manage_inventory_items' ),
-                  'export' => current_user_can( 'manage_inventory_items' ),
-            ),
-        ) );
-    }
     public function shopping_list_page() {
         if ( ! current_user_can( 'manage_inventory_items' ) ) {
             wp_die(
