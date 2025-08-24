@@ -901,6 +901,7 @@ function pit_enqueue_enhanced_frontend() {
                 'restUrl' => rest_url( 'pit/v2/' ),
                 'nonce'   => wp_create_nonce( 'wp_rest' ),
                 'items'   => $choices,
+                'assetUrl' => esc_url_raw( PIT_PLUGIN_URL . 'assets/' ),
             ]
         );
     }

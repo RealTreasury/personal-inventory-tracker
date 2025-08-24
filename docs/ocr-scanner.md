@@ -13,13 +13,13 @@ Display the scanner on any public page with the `[pit_ocr_scanner]` shortcode.
 4. Publish the page and open it on the front end to try scanning receipts.
 
 ## Camera capture
-1. Open the **OCR Receipt** page in the dashboard.
-2. Choose **Use Camera** and allow browser access to your camera.
+1. Visit the page where you placed the `[pit_ocr_scanner]` shortcode.
+2. Choose **Open Camera** and allow browser access to your camera.
 3. Align the receipt in the frame and press **Capture**. The image is processed locally and suggested items appear below.
 
 ## Image upload
-1. Open the **OCR Receipt** page.
-2. Select **Upload Image** to choose a photo of a receipt from your device.
+1. Visit the same page on the front end.
+2. Select **Upload Image** to choose a photo of a receipt from your device or take a new photo.
 3. Confirm the selection and let the scanner extract items.
 
 ## Settings
