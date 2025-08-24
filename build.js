@@ -52,7 +52,6 @@ const builds = [
   },
   { entryPoints: ['src/admin.js'], outfile: 'assets/admin.js', globalName: 'PITAdmin' },
   { entryPoints: ['src/ocr.js'], outfile: 'assets/ocr.js', globalName: 'PITOcr' },
-  { entryPoints: ['src/import-export.jsx'], outfile: 'assets/import-export.js', globalName: 'PITImportExport', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
   { entryPoints: ['src/analytics.jsx'], outfile: 'assets/analytics.js', globalName: 'PITAnalytics', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
   { entryPoints: ['src/shopping-list.jsx'], outfile: 'assets/shopping-list.js', globalName: 'PITShoppingList', loader: { '.jsx': 'jsx' }, external: ['react','react-dom'] },
   {
@@ -106,7 +105,6 @@ Use this plugin to keep a detailed record of household items with minimal effort
 
 ## Features
 - OCR-powered item suggestion
-- CSV import and export
 - Responsive admin dashboard
 - Lightweight build with esbuild
 

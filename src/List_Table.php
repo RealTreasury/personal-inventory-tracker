@@ -84,7 +84,6 @@ class List_Table extends WP_List_Table {
     protected function get_bulk_actions() {
         return array(
             'delete' => __( 'Delete', 'personal-inventory-tracker' ),
-            'export' => __( 'Export', 'personal-inventory-tracker' ),
         );
     }
 
@@ -156,15 +155,7 @@ class List_Table extends WP_List_Table {
                     wp_delete_post( absint( $item_id ), true );
                 }
             }
-
-            if ( 'export' === $action ) {
-                $this->export_items( array_map( 'absint', (array) $_REQUEST['item_ids'] ) );
-            }
         }
-    }
-
-    protected function export_items( $item_ids ) {
-        Import_Export::output_csv( $item_ids );
     }
 }
 

@@ -25,7 +25,6 @@ require_once PIT_PLUGIN_DIR . 'includes/class-pit-cache.php';
 require_once PIT_PLUGIN_DIR . 'includes/class-pit-blocks.php';
 
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
-    WP_CLI::add_command( 'pit inventory', 'RealTreasury\Inventory\CLI\Inventory_Command' );
     WP_CLI::add_command( 'pit cache', 'RealTreasury\Inventory\CLI\Cache_Command' );
 }
 
@@ -84,19 +83,6 @@ class PIT_Enhanced_REST {
         register_rest_route('pit/v2', '/items/batch', [
             'methods' => WP_REST_Server::EDITABLE,
             'callback' => [$this, 'batch_update_items'],
-            'permission_callback' => [$this, 'permissions_write'],
-        ]);
-
-        // Import/Export endpoints
-        register_rest_route('pit/v2', '/export', [
-            'methods' => WP_REST_Server::READABLE,
-            'callback' => [$this, 'export_data'],
-            'permission_callback' => [$this, 'permissions_read'],
-        ]);
-
-        register_rest_route('pit/v2', '/import', [
-            'methods' => WP_REST_Server::CREATABLE,
-            'callback' => [$this, 'import_data'],
             'permission_callback' => [$this, 'permissions_write'],
         ]);
 
@@ -657,133 +643,6 @@ class PIT_Enhanced_REST {
     }
 
     // Import data
-    public function import_data( $request ) {
-        $permission = $this->permissions_write( $request );
-        if ( is_wp_error( $permission ) ) {
-            return $permission;
-        }
-
-        $items = $request->get_param( 'items' );
-        if ( ! is_array( $items ) ) {
-            return new WP_Error( 'invalid_items', __( 'Invalid items data.', 'personal-inventory-tracker' ), [ 'status' => 400 ] );
-        }
-
-        $imported = 0;
-        $errors   = [];
-
-        foreach ( $items as $item ) {
-            $title = isset( $item['title'] ) ? sanitize_text_field( $item['title'] ) : '';
-
-            if ( '' === $title ) {
-                $errors[] = __( 'Missing title.', 'personal-inventory-tracker' );
-                continue;
-            }
-
-            $existing = get_page_by_title( $title, OBJECT, 'pit_item' );
-            if ( $existing ) {
-                $id = $existing->ID;
-                wp_update_post( [ 'ID' => $id, 'post_title' => $title ] );
-            } else {
-                $id = wp_insert_post(
-                    [
-                        'post_type'   => 'pit_item',
-                        'post_title'  => $title,
-                        'post_status' => 'publish',
-                    ],
-                    true
-                );
-                if ( is_wp_error( $id ) ) {
-                    $errors[] = $id->get_error_message();
-                    continue;
-                }
-            }
-
-            if ( isset( $item['qty'] ) ) {
-                update_post_meta( $id, 'pit_qty', absint( $item['qty'] ) );
-            }
-
-            if ( isset( $item['unit'] ) ) {
-                update_post_meta( $id, 'pit_unit', sanitize_text_field( $item['unit'] ) );
-            }
-
-            if ( isset( $item['threshold'] ) ) {
-                update_post_meta( $id, 'pit_threshold', absint( $item['threshold'] ) );
-            }
-
-            if ( isset( $item['notes'] ) ) {
-                update_post_meta( $id, 'pit_notes', sanitize_textarea_field( $item['notes'] ) );
-            }
-
-            if ( isset( $item['category'] ) ) {
-                $slug = sanitize_title( $item['category'] );
-                $term = get_term_by( 'slug', $slug, 'pit_category' );
-                if ( ! $term ) {
-                    $term = wp_insert_term( $slug, 'pit_category', [ 'slug' => $slug ] );
-                }
-                if ( ! is_wp_error( $term ) ) {
-                    $term_id = is_array( $term ) ? $term['term_id'] : $term->term_id;
-                    wp_set_post_terms( $id, [ $term_id ], 'pit_category', false );
-                }
-            }
-
-            $imported++;
-        }
-
-        return rest_ensure_response(
-            [
-                'imported' => $imported,
-                'errors'   => $errors,
-            ]
-        );
-    }
-
-    // Export data
-    public function export_data($request) {
-        $format = $request->get_param('format') ?: 'csv';
-        $items = get_posts([
-            'post_type' => 'pit_item',
-            'posts_per_page' => -1,
-            'post_status' => 'publish'
-        ]);
-
-        $data = [];
-        foreach ($items as $item) {
-            $data[] = $this->prepare_item($item);
-        }
-
-        if ($format === 'json') {
-            return rest_ensure_response($data);
-        }
-
-        // CSV format
-        $csv_data = $this->array_to_csv($data);
-        
-        return new WP_REST_Response($csv_data, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="inventory-export-' . date('Y-m-d') . '.csv"'
-        ]);
-    }
-
-    // Helper to convert array to CSV
-    private function array_to_csv($data) {
-        if (empty($data)) return '';
-
-        $output = fopen('php://temp', 'w+');
-        
-        // Header row
-        fputcsv($output, array_keys($data[0]));
-        
-        // Data rows
-        foreach ($data as $row) {
-            fputcsv($output, $row);
-        }
-
-        rewind($output);
-        $csv = stream_get_contents($output);
-        fclose($output);
-
-        return $csv;
-    }
 }
 
 // Enhanced frontend functionality
@@ -853,8 +712,6 @@ function pit_enqueue_enhanced_frontend() {
                 'lowStock'        => __( 'Low Stock', 'personal-inventory-tracker' ),
                 'outOfStock'      => __( 'Out of Stock', 'personal-inventory-tracker' ),
                 'recentPurchases' => __( 'Recent Purchases', 'personal-inventory-tracker' ),
-                'exportData'      => __( 'Export Data', 'personal-inventory-tracker' ),
-                'importData'      => __( 'Import Data', 'personal-inventory-tracker' ),
                 'scanReceipt'     => __( 'Scan Receipt', 'personal-inventory-tracker' ),
                 'categories'      => __( 'Categories', 'personal-inventory-tracker' ),
                 'confirmDelete'   => __( 'Are you sure you want to delete this item?', 'personal-inventory-tracker' ),

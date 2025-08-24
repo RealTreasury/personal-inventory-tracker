@@ -1,12 +1,11 @@
 # Personal Inventory Tracker
 
-Personal Inventory Tracker is a WordPress plugin that helps you manage household items with OCR-powered receipt scanning and CSV import/export so you always know what you have on hand.
+Personal Inventory Tracker is a WordPress plugin that helps you manage household items with OCR-powered receipt scanning so you always know what you have on hand.
 
 ## Features
 - Custom post type for inventory items.
 - REST API for integrations.
 - Client-side OCR (Tesseract.js) to extract items from receipts.
-- Import and export inventory via CSV.
 - Cron-based reorder reminders.
 
 ## Requirements
@@ -23,14 +22,13 @@ Personal Inventory Tracker is a WordPress plugin that helps you manage household
 5. Configure settings under **Settings → Personal Inventory**.
 
 ## Quick Start
-1. Prepare a CSV file with your items in the format below.
-2. In the WordPress admin, navigate to Personal Inventory and import the CSV or add items manually.
-3. Place one of the following shortcodes on a page to display the inventory interface:
+1. In the WordPress admin, navigate to Personal Inventory and add items manually.
+2. Place one of the following shortcodes on a page to display the inventory interface:
    `[personal_inventory]`, `[pit_enhanced]`, `[pit_dashboard]`, or `[pit_app]` (deprecated).
-4. Choose a front-end mode:
+3. Choose a front-end mode:
    - **Read-only:** visitors can view inventory but cannot modify data.
    - **Write:** authenticated users can update quantities or add items via the REST API.
-5. Use the OCR widget to scan receipts and pre-fill item fields.
+4. Use the OCR widget to scan receipts and pre-fill item fields.
 
 ## Shortcodes
 The plugin registers several shortcodes that render the same inventory interface:
@@ -62,10 +60,6 @@ This parser supports quoted fields, embedded commas, and both LF and CRLF line e
 ## CLI Commands
 Use WP-CLI to manage inventory from the command line.
 
-- Export items to CSV:
-  `wp pit inventory export --file=items.csv`
-- Import items from CSV:
-  `wp pit inventory import items.csv`
 - Clear cached data:
   `wp pit cache clear`
 

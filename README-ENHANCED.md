@@ -5,7 +5,6 @@ Use this plugin to keep a detailed record of household items with minimal effort
 
 ## Features
 - OCR-powered item suggestion
-- CSV import and export
 - Responsive admin dashboard
 - Lightweight build with esbuild
 

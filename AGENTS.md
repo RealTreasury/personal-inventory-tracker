@@ -1,7 +1,7 @@
 # AGENTS
 
 ## Overview
-- Personal Inventory Tracker helps households manage inventory using OCR receipt scanning and CSV import/export.
+- Personal Inventory Tracker helps households manage inventory using OCR receipt scanning.
 - This codebase targets WordPress.
 
 ## PHP
