@@ -315,43 +315,91 @@ class Rest_Api {
     public function batch_update_items( $request ) {
         $updates = $request->get_param( 'items' );
         $results = array();
+        $errors  = array();
+        
         if ( is_array( $updates ) ) {
             foreach ( $updates as $update ) {
                 $id = isset( $update['id'] ) ? (int) $update['id'] : 0;
                 if ( ! $id ) {
+                    $errors[] = sprintf( __( 'Invalid item ID provided.', 'personal-inventory-tracker' ) );
                     continue;
                 }
+
+                // Verify the post exists and user can edit it
+                $post = get_post( $id );
+                if ( ! $post || 'pit_item' !== $post->post_type ) {
+                    $errors[] = sprintf( __( 'Item with ID %d not found.', 'personal-inventory-tracker' ), $id );
+                    continue;
+                }
+
+                // Check if user can edit this specific post
+                if ( ! current_user_can( 'edit_post', $id ) ) {
+                    $errors[] = sprintf( __( 'You cannot edit item with ID %d.', 'personal-inventory-tracker' ), $id );
+                    continue;
+                }
+
                 if ( isset( $update['title'] ) ) {
-                    wp_update_post(
+                    $result = wp_update_post(
                         array(
                             'ID'         => $id,
                             'post_title' => sanitize_text_field( $update['title'] ),
-                        )
+                        ),
+                        true
                     );
+                    
+                    if ( is_wp_error( $result ) ) {
+                        $errors[] = sprintf( __( 'Failed to update item %d: %s', 'personal-inventory-tracker' ), $id, $result->get_error_message() );
+                        continue;
+                    }
                 }
+                
                 if ( isset( $update['qty'] ) ) {
                     update_post_meta( $id, 'qty', (int) $update['qty'] );
                 }
+                
                 if ( isset( $update['purchased'] ) ) {
                     update_post_meta( $id, 'purchased', ! empty( $update['purchased'] ) );
                 }
+                
                 $results[] = $this->prepare_item( get_post( $id ) );
             }
         }
-        return rest_ensure_response( $results );
+        
+        $response = array(
+            'items'  => $results,
+            'errors' => $errors,
+        );
+        
+        return rest_ensure_response( $response );
     }
 
 
     public function update_item( $request ) {
         $id = (int) $request['id'];
 
+        // Verify the post exists and user can edit it
+        $post = get_post( $id );
+        if ( ! $post || 'pit_item' !== $post->post_type ) {
+            return new \WP_Error( 'pit_item_not_found', __( 'Item not found.', 'personal-inventory-tracker' ), array( 'status' => 404 ) );
+        }
+
+        // Check if user can edit this specific post
+        if ( ! current_user_can( 'edit_post', $id ) ) {
+            return new \WP_Error( 'pit_cannot_edit', __( 'You cannot edit this item.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
         if ( isset( $request['title'] ) ) {
-            wp_update_post(
+            $result = wp_update_post(
                 array(
                     'ID'         => $id,
                     'post_title' => sanitize_text_field( $request['title'] ),
-                )
+                ),
+                true
             );
+            
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
         }
 
         if ( isset( $request['qty'] ) ) {
@@ -392,6 +440,18 @@ class Rest_Api {
 
     public function delete_item( $request ) {
         $id = (int) $request['id'];
+
+        // Verify the post exists and user can delete it
+        $post = get_post( $id );
+        if ( ! $post || 'pit_item' !== $post->post_type ) {
+            return new \WP_Error( 'pit_item_not_found', __( 'Item not found.', 'personal-inventory-tracker' ), array( 'status' => 404 ) );
+        }
+
+        // Check if user can delete this specific post
+        if ( ! current_user_can( 'delete_post', $id ) ) {
+            return new \WP_Error( 'pit_cannot_delete', __( 'You cannot delete this item.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
         $deleted = wp_trash_post( $id );
 
         if ( ! $deleted ) {

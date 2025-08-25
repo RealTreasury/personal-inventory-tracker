@@ -32,11 +32,13 @@ export async function extractItemSuggestions(image, minConfidence = 60) {
         confidence: line.confidence,
       }));
   } catch (err) {
-    console.warn(err.message);
-    if (typeof window !== 'undefined') {
-      alert(err.message);
-    }
-    return [];
+    console.error('OCR processing failed:', err.message);
+    // Return a more specific error structure instead of using alert
+    return {
+      error: true,
+      message: err.message,
+      items: []
+    };
   }
 }
 
