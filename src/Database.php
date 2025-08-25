@@ -44,6 +44,8 @@ class Database {
         foreach ( $indexes as $name => $sql ) {
             $exists = $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM {$postmeta} WHERE Key_name = %s", $name ) );
             if ( ! $exists ) {
+                // Note: CREATE INDEX statements cannot use prepare() as they don't support placeholders
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
                 $wpdb->query( $sql );
             }
         }
@@ -61,15 +63,22 @@ class Database {
             $postmeta = $wpdb->postmeta;
 
             // Rename legacy meta keys to new prefixed versions.
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_qty' WHERE meta_key = 'qty'" );
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_threshold' WHERE meta_key = 'reorder_threshold'" );
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_interval' WHERE meta_key = 'reorder_interval'" );
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_last_purchased' WHERE meta_key = 'last_reordered'" );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_qty', 'qty' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_threshold', 'reorder_threshold' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_interval', 'reorder_interval' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_last_purchased', 'last_reordered' ) );
 
             // Rename deprecated prefixed keys.
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_threshold' WHERE meta_key = 'pit_reorder_threshold'" );
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_interval' WHERE meta_key = 'pit_reorder_interval'" );
-            $wpdb->query( "UPDATE {$postmeta} SET meta_key = 'pit_last_purchased' WHERE meta_key = 'pit_last_reordered'" );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_threshold', 'pit_reorder_threshold' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_interval', 'pit_reorder_interval' ) );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query( $wpdb->prepare( "UPDATE {$postmeta} SET meta_key = %s WHERE meta_key = %s", 'pit_last_purchased', 'pit_last_reordered' ) );
         }
     }
 
@@ -104,6 +113,8 @@ class Database {
         foreach ( $indexes as $name ) {
             $exists = $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM {$postmeta} WHERE Key_name = %s", $name ) );
             if ( $exists ) {
+                // Note: DROP INDEX statements cannot use prepare() as they don't support placeholders
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
                 $wpdb->query( "DROP INDEX {$name} ON {$postmeta}" );
             }
         }

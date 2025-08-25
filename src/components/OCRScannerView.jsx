@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import {
   Camera, Upload, X, Check, AlertCircle,
   Loader2, Zap, Settings, Plus
@@ -143,8 +144,24 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
 
     } catch (error) {
       console.error('OCR processing failed:', error);
-      setProcessingStage('');
-      alert('OCR processing failed. Please try again.');
+      setProcessingStage('Error: OCR processing failed');
+      
+      // Create a user-friendly error message
+      let errorMessage = 'OCR processing failed. ';
+      if (error.message.includes('worker')) {
+        errorMessage += 'Failed to initialize OCR worker. Please try again.';
+      } else if (error.message.includes('language')) {
+        errorMessage += 'Failed to load language pack. Please check your internet connection.';
+      } else {
+        errorMessage += 'Please try again with a clearer image.';
+      }
+      
+      // Instead of alert, set an error state that can be displayed in the UI
+      setScanResults([{
+        text: errorMessage,
+        confidence: 0,
+        error: true
+      }]);
     } finally {
       setIsScanning(false);
     }
@@ -272,6 +289,12 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
         </div>
       </div>
     );
+  };
+
+  // PropTypes for SettingsPanel
+  SettingsPanel.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
   };
 
   const [showSettings, setShowSettings] = useState(false);
@@ -529,6 +552,17 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
       />
     </div>
   );
+};
+
+// PropTypes definitions
+OCRScannerView.propTypes = {
+  onItemsExtracted: PropTypes.func,
+  items: PropTypes.arrayOf(PropTypes.object),
+};
+
+OCRScannerView.defaultProps = {
+  onItemsExtracted: () => {},
+  items: [],
 };
 
 export default OCRScannerView;

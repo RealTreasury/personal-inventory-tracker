@@ -32,11 +32,13 @@ export async function extractItemSuggestions(image, minConfidence = 60) {
         confidence: line.confidence,
       }));
   } catch (err) {
-    console.warn(err.message);
-    if (typeof window !== 'undefined') {
-      alert(err.message);
-    }
-    return [];
+    console.error('OCR processing failed:', err.message);
+    // Return a more specific error structure instead of using alert
+    return {
+      error: true,
+      message: err.message,
+      items: []
+    };
   }
 }
 
@@ -51,6 +53,12 @@ export function bindOcrToInput(input, callback, minConfidence = 60) {
     console.warn('OCR binding skipped: not in a browser');
     return;
   }
+  
+  if (!input || typeof input.addEventListener !== 'function') {
+    console.warn('OCR binding skipped: invalid input element');
+    return;
+  }
+  
   input.addEventListener('change', async () => {
     const [file] = input.files;
     if (file) {

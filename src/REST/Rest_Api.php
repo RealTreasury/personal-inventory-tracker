@@ -8,6 +8,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Rest_Api {
 
+    /**
+     * Verify nonce for REST request.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return true|WP_Error True if valid, WP_Error if invalid.
+     */
     protected function verify_nonce( $request ) {
         $nonce = $request->get_header( 'X-WP-Nonce' );
         if ( ! $nonce ) {
@@ -19,6 +25,12 @@ class Rest_Api {
         return true;
     }
 
+    /**
+     * Check rate limiting for requests.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return true|WP_Error True if within limits, WP_Error if rate limited.
+     */
     protected function check_rate_limit( $request ) {
         $user_id = get_current_user_id();
         $key     = $user_id ? 'pit_rate_' . $user_id : 'pit_rate_' . md5( $_SERVER['REMOTE_ADDR'] ?? '' );
@@ -32,6 +44,11 @@ class Rest_Api {
         return true;
     }
 
+    /**
+     * Get the JSON schema for inventory items.
+     *
+     * @return array The schema definition.
+     */
     public function get_item_schema() {
         return array(
             '$schema'    => 'http://json-schema.org/draft-04/schema#',
@@ -61,6 +78,9 @@ class Rest_Api {
         );
     }
 
+    /**
+     * Register REST API routes for inventory items.
+     */
     public function register_routes() {
         register_rest_route(
             'pit/v1',
@@ -204,6 +224,12 @@ class Rest_Api {
         );
     }
 
+    /**
+     * Check read permissions for REST requests.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return true|WP_Error True if permitted, WP_Error if not.
+     */
     public function permissions_read( $request ) {
         $nonce = $this->verify_nonce( $request );
         if ( true !== $nonce ) {
@@ -222,6 +248,12 @@ class Rest_Api {
         return true;
     }
 
+    /**
+     * Check write permissions for REST requests.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return true|WP_Error True if permitted, WP_Error if not.
+     */
     public function permissions_write( $request ) {
         $nonce = $this->verify_nonce( $request );
         if ( true !== $nonce ) {
@@ -244,6 +276,12 @@ class Rest_Api {
         return true;
     }
 
+    /**
+     * Prepare inventory item data for API response.
+     *
+     * @param WP_Post $post The post object.
+     * @return array Formatted item data.
+     */
     protected function prepare_item( $post ) {
         return array(
             'id'        => $post->ID,
@@ -253,6 +291,12 @@ class Rest_Api {
         );
     }
 
+    /**
+     * Get all inventory items.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return WP_REST_Response Response containing items array.
+     */
     public function get_items( $request ) {
         $posts = get_posts(
             array(
@@ -260,6 +304,14 @@ class Rest_Api {
                 'posts_per_page' => -1,
             )
         );
+
+        if ( empty( $posts ) ) {
+            return rest_ensure_response( array() );
+        }
+
+        // Use WordPress cache to optimize meta lookups
+        $post_ids = wp_list_pluck( $posts, 'ID' );
+        update_meta_cache( 'post', $post_ids );
 
         $items = array();
         foreach ( $posts as $post ) {
@@ -269,6 +321,12 @@ class Rest_Api {
         return rest_ensure_response( $items );
     }
 
+    /**
+     * Create a new inventory item.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return WP_REST_Response|WP_Error Response with created item or error.
+     */
     public function create_item( $request ) {
         $id = wp_insert_post(
             array(
@@ -312,46 +370,100 @@ class Rest_Api {
         return rest_ensure_response( $this->prepare_item( get_post( $id ) ) );
     }
 
+    /**
+     * Update multiple inventory items in batch.
+     *
+     * @param WP_REST_Request $request The REST request.
+     * @return WP_REST_Response Response with updated items and any errors.
+     */
     public function batch_update_items( $request ) {
         $updates = $request->get_param( 'items' );
         $results = array();
+        $errors  = array();
+        
         if ( is_array( $updates ) ) {
             foreach ( $updates as $update ) {
                 $id = isset( $update['id'] ) ? (int) $update['id'] : 0;
                 if ( ! $id ) {
+                    $errors[] = sprintf( __( 'Invalid item ID provided.', 'personal-inventory-tracker' ) );
                     continue;
                 }
+
+                // Verify the post exists and user can edit it
+                $post = get_post( $id );
+                if ( ! $post || 'pit_item' !== $post->post_type ) {
+                    $errors[] = sprintf( __( 'Item with ID %d not found.', 'personal-inventory-tracker' ), $id );
+                    continue;
+                }
+
+                // Check if user can edit this specific post
+                if ( ! current_user_can( 'edit_post', $id ) ) {
+                    $errors[] = sprintf( __( 'You cannot edit item with ID %d.', 'personal-inventory-tracker' ), $id );
+                    continue;
+                }
+
                 if ( isset( $update['title'] ) ) {
-                    wp_update_post(
+                    $result = wp_update_post(
                         array(
                             'ID'         => $id,
                             'post_title' => sanitize_text_field( $update['title'] ),
-                        )
+                        ),
+                        true
                     );
+                    
+                    if ( is_wp_error( $result ) ) {
+                        $errors[] = sprintf( __( 'Failed to update item %d: %s', 'personal-inventory-tracker' ), $id, $result->get_error_message() );
+                        continue;
+                    }
                 }
+                
                 if ( isset( $update['qty'] ) ) {
                     update_post_meta( $id, 'qty', (int) $update['qty'] );
                 }
+                
                 if ( isset( $update['purchased'] ) ) {
                     update_post_meta( $id, 'purchased', ! empty( $update['purchased'] ) );
                 }
+                
                 $results[] = $this->prepare_item( get_post( $id ) );
             }
         }
-        return rest_ensure_response( $results );
+        
+        $response = array(
+            'items'  => $results,
+            'errors' => $errors,
+        );
+        
+        return rest_ensure_response( $response );
     }
 
 
     public function update_item( $request ) {
         $id = (int) $request['id'];
 
+        // Verify the post exists and user can edit it
+        $post = get_post( $id );
+        if ( ! $post || 'pit_item' !== $post->post_type ) {
+            return new \WP_Error( 'pit_item_not_found', __( 'Item not found.', 'personal-inventory-tracker' ), array( 'status' => 404 ) );
+        }
+
+        // Check if user can edit this specific post
+        if ( ! current_user_can( 'edit_post', $id ) ) {
+            return new \WP_Error( 'pit_cannot_edit', __( 'You cannot edit this item.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
         if ( isset( $request['title'] ) ) {
-            wp_update_post(
+            $result = wp_update_post(
                 array(
                     'ID'         => $id,
                     'post_title' => sanitize_text_field( $request['title'] ),
-                )
+                ),
+                true
             );
+            
+            if ( is_wp_error( $result ) ) {
+                return $result;
+            }
         }
 
         if ( isset( $request['qty'] ) ) {
@@ -392,6 +504,18 @@ class Rest_Api {
 
     public function delete_item( $request ) {
         $id = (int) $request['id'];
+
+        // Verify the post exists and user can delete it
+        $post = get_post( $id );
+        if ( ! $post || 'pit_item' !== $post->post_type ) {
+            return new \WP_Error( 'pit_item_not_found', __( 'Item not found.', 'personal-inventory-tracker' ), array( 'status' => 404 ) );
+        }
+
+        // Check if user can delete this specific post
+        if ( ! current_user_can( 'delete_post', $id ) ) {
+            return new \WP_Error( 'pit_cannot_delete', __( 'You cannot delete this item.', 'personal-inventory-tracker' ), array( 'status' => 403 ) );
+        }
+
         $deleted = wp_trash_post( $id );
 
         if ( ! $deleted ) {

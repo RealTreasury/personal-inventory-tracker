@@ -121,18 +121,33 @@ class List_Table extends WP_List_Table {
         $query = new \WP_Query( $args );
         $items = array();
 
-        foreach ( $query->posts as $post ) {
-            $items[] = array(
-                'ID'             => $post->ID,
-                'name'           => $post->post_title,
-                'category'       => implode( ', ', wp_get_post_terms( $post->ID, 'pit_category', array( 'fields' => 'names' ) ) ),
-                'qty'            => get_post_meta( $post->ID, 'pit_qty', true ),
-                'unit'           => get_post_meta( $post->ID, 'pit_unit', true ),
-                'last_purchased' => get_post_meta( $post->ID, 'pit_last_purchased', true ),
-                'threshold'      => get_post_meta( $post->ID, 'pit_threshold', true ),
-                'interval'       => get_post_meta( $post->ID, 'pit_interval', true ),
-                'status'         => get_post_meta( $post->ID, 'pit_status', true ),
-            );
+        if ( ! empty( $query->posts ) ) {
+            // Get all post IDs for bulk operations
+            $post_ids = wp_list_pluck( $query->posts, 'ID' );
+            
+            // Use WordPress cache to optimize repeated meta lookups
+            update_meta_cache( 'post', $post_ids );
+            
+            // Bulk fetch all category terms using object cache
+            $category_data = array();
+            foreach ( $post_ids as $post_id ) {
+                $terms = wp_get_post_terms( $post_id, 'pit_category', array( 'fields' => 'names' ) );
+                $category_data[ $post_id ] = is_array( $terms ) ? implode( ', ', $terms ) : '';
+            }
+
+            foreach ( $query->posts as $post ) {
+                $items[] = array(
+                    'ID'             => $post->ID,
+                    'name'           => $post->post_title,
+                    'category'       => $category_data[ $post->ID ] ?? '',
+                    'qty'            => get_post_meta( $post->ID, 'pit_qty', true ),
+                    'unit'           => get_post_meta( $post->ID, 'pit_unit', true ),
+                    'last_purchased' => get_post_meta( $post->ID, 'pit_last_purchased', true ),
+                    'threshold'      => get_post_meta( $post->ID, 'pit_threshold', true ),
+                    'interval'       => get_post_meta( $post->ID, 'pit_interval', true ),
+                    'status'         => get_post_meta( $post->ID, 'pit_status', true ),
+                );
+            }
         }
 
         $this->items = $items;
