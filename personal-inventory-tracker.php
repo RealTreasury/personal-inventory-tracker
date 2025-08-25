@@ -135,7 +135,7 @@ class PIT_Enhanced_REST {
         return true;
     }
 
-    // Get items with enhanced filtering
+    // Get items with enhanced filtering and performance optimization
     public function get_items($request) {
         $search = $request->get_param('search');
         $category = $request->get_param('category');
@@ -144,83 +144,33 @@ class PIT_Enhanced_REST {
         $order = $request->get_param('order');
         $per_page = min(100, max(1, (int) $request->get_param('per_page')));
         $page = max(1, (int) $request->get_param('page'));
+        $fields = $request->get_param('fields') ? explode(',', $request->get_param('fields')) : null;
 
-        $args = [
-            'post_type' => 'pit_item',
-            'post_status' => 'publish',
-            'posts_per_page' => $per_page,
-            'paged' => $page,
-        ];
+        // Check cache first for common queries
+        $cache_key = 'pit_items_' . md5(serialize([
+            'search' => $search,
+            'category' => $category, 
+            'status' => $status,
+            'sort' => $sort,
+            'order' => $order,
+            'per_page' => $per_page,
+            'page' => $page,
+            'fields' => $fields
+        ]));
 
-        // Search functionality
-        if ($search) {
-            $args['s'] = sanitize_text_field($search);
-        }
+        $cached_result = PIT_Cache::get_or_set(
+            $cache_key,
+            function() use ($search, $category, $status, $sort, $order, $per_page, $page, $fields) {
+                return $this->fetch_items_optimized($search, $category, $status, $sort, $order, $per_page, $page, $fields);
+            },
+            300 // 5 minutes cache
+        );
 
-        // Category filter
-        if ($category) {
-            $args['tax_query'] = [
-                [
-                    'taxonomy' => 'pit_category',
-                    'field' => 'slug',
-                    'terms' => sanitize_text_field($category),
-                ]
-            ];
-        }
-
-        // Status filter
-        if ($status) {
-            switch ($status) {
-                case 'low-stock':
-                    $args['meta_query'] = [
-                        [
-                            'key' => 'pit_qty',
-                            'value' => 5,
-                            'compare' => '<='
-                        ]
-                    ];
-                    break;
-                case 'out-of-stock':
-                    $args['meta_query'] = [
-                        [
-                            'key' => 'pit_qty',
-                            'value' => 0,
-                            'compare' => '='
-                        ]
-                    ];
-                    break;
-            }
-        }
-
-        // Sorting
-        if ($sort) {
-            switch ($sort) {
-                case 'title':
-                    $args['orderby'] = 'title';
-                    break;
-                case 'date':
-                    $args['orderby'] = 'date';
-                    break;
-                case 'quantity':
-                    $args['orderby'] = 'meta_value_num';
-                    $args['meta_key'] = 'pit_qty';
-                    break;
-            }
-            $args['order'] = ($order === 'desc') ? 'DESC' : 'ASC';
-        }
-
-        $query = new WP_Query($args);
-        $items = [];
-
-        foreach ($query->posts as $post) {
-            $items[] = $this->prepare_item($post);
-        }
-
-        $response = rest_ensure_response($items);
+        $response = rest_ensure_response($cached_result['items']);
         
         // Add pagination headers
-        $response->header('X-WP-Total', $query->found_posts);
-        $response->header('X-WP-TotalPages', $query->max_num_pages);
+        $response->header('X-WP-Total', $cached_result['total']);
+        $response->header('X-WP-TotalPages', $cached_result['total_pages']);
 
         return $response;
     }
@@ -304,6 +254,10 @@ class PIT_Enhanced_REST {
                 update_post_meta($post_id, 'pit_last_purchased', current_time('Y-m-d'));
             }
         }
+
+        // Clear cache when item is updated
+        PIT_Cache::clear_by_pattern('pit_items_');
+        PIT_Cache::clear_by_pattern('pit_analytics_');
 
         return rest_ensure_response($this->prepare_item(get_post($post_id)));
     }
@@ -585,6 +539,106 @@ class PIT_Enhanced_REST {
         return rest_ensure_response($formatted);
     }
 
+    // Optimized item fetching with bulk operations
+    private function fetch_items_optimized($search, $category, $status, $sort, $order, $per_page, $page, $fields) {
+        $args = [
+            'post_type' => 'pit_item',
+            'post_status' => 'publish',
+            'posts_per_page' => $per_page,
+            'paged' => $page,
+            'no_found_rows' => false, // We need total count
+        ];
+
+        // Search functionality
+        if ($search) {
+            $args['s'] = sanitize_text_field($search);
+        }
+
+        // Category filter
+        if ($category) {
+            $args['tax_query'] = [
+                [
+                    'taxonomy' => 'pit_category',
+                    'field' => 'slug',
+                    'terms' => sanitize_text_field($category),
+                ]
+            ];
+        }
+
+        // Status filter
+        if ($status) {
+            switch ($status) {
+                case 'low-stock':
+                    $args['meta_query'] = [
+                        [
+                            'key' => 'pit_qty',
+                            'value' => 5,
+                            'compare' => '<='
+                        ]
+                    ];
+                    break;
+                case 'out-of-stock':
+                    $args['meta_query'] = [
+                        [
+                            'key' => 'pit_qty',
+                            'value' => 0,
+                            'compare' => '='
+                        ]
+                    ];
+                    break;
+            }
+        }
+
+        // Sorting
+        if ($sort) {
+            switch ($sort) {
+                case 'title':
+                    $args['orderby'] = 'title';
+                    break;
+                case 'date':
+                    $args['orderby'] = 'date';
+                    break;
+                case 'quantity':
+                    $args['orderby'] = 'meta_value_num';
+                    $args['meta_key'] = 'pit_qty';
+                    break;
+            }
+            $args['order'] = ($order === 'desc') ? 'DESC' : 'ASC';
+        }
+
+        $query = new WP_Query($args);
+        
+        if (empty($query->posts)) {
+            return [
+                'items' => [],
+                'total' => 0,
+                'total_pages' => 0
+            ];
+        }
+
+        // Bulk load meta data for performance
+        $post_ids = wp_list_pluck($query->posts, 'ID');
+        update_meta_cache('post', $post_ids);
+        
+        // Bulk load category terms
+        $category_data = array();
+        foreach ($post_ids as $post_id) {
+            $terms = wp_get_post_terms($post_id, 'pit_category', array('fields' => 'names'));
+            $category_data[$post_id] = is_array($terms) ? ($terms[0] ?? null) : null;
+        }
+
+        $items = [];
+        foreach ($query->posts as $post) {
+            $items[] = $this->prepare_item_optimized($post, $category_data[$post->ID] ?? null, $fields);
+        }
+
+        return [
+            'items' => $items,
+            'total' => $query->found_posts,
+            'total_pages' => $query->max_num_pages
+        ];
+    }
+
     // Helper function to prepare item data
     private function prepare_item($post) {
         if (!$post) return null;
@@ -605,6 +659,52 @@ class PIT_Enhanced_REST {
             'updated_at' => $post->post_modified,
             'status' => $this->get_item_status($post->ID)
         ];
+    }
+
+    // Optimized prepare_item method that uses pre-loaded data
+    private function prepare_item_optimized($post, $category = null, $fields = null) {
+        if (!$post) return null;
+
+        // Use cached meta data that was bulk loaded
+        $qty = absint(get_post_meta($post->ID, 'pit_qty', true));
+        $threshold = absint(get_post_meta($post->ID, 'pit_threshold', true));
+        
+        // Calculate status inline to avoid additional method call
+        if ($qty === 0) {
+            $status = 'out-of-stock';
+        } elseif ($threshold > 0 && $qty <= $threshold) {
+            $status = 'low-stock';
+        } else {
+            $status = 'in-stock';
+        }
+
+        $item_data = [
+            'id' => $post->ID,
+            'title' => $post->post_title,
+            'qty' => $qty,
+            'unit' => get_post_meta($post->ID, 'pit_unit', true),
+            'threshold' => $threshold,
+            'purchased' => (bool) get_post_meta($post->ID, 'pit_purchased', true),
+            'last_purchased' => get_post_meta($post->ID, 'pit_last_purchased', true),
+            'notes' => get_post_meta($post->ID, 'pit_notes', true),
+            'category' => $category, // Pre-loaded category
+            'created_at' => $post->post_date,
+            'updated_at' => $post->post_modified,
+            'status' => $status
+        ];
+
+        // Field selection for reduced payload
+        if ($fields && is_array($fields)) {
+            $filtered_data = [];
+            foreach ($fields as $field) {
+                if (isset($item_data[$field])) {
+                    $filtered_data[$field] = $item_data[$field];
+                }
+            }
+            return $filtered_data;
+        }
+
+        return $item_data;
     }
 
     // Helper to get item status
