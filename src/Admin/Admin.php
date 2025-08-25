@@ -161,12 +161,14 @@ document.addEventListener('DOMContentLoaded',function(){
         );
         echo '</td></tr>';
 
-        $qty       = $item_id ? get_post_meta( $item_id, 'pit_qty', true ) : '';
-        $unit      = $item_id ? get_post_meta( $item_id, 'pit_unit', true ) : '';
-        $last      = $item_id ? get_post_meta( $item_id, 'pit_last_purchased', true ) : '';
-        $threshold = $item_id ? get_post_meta( $item_id, 'pit_threshold', true ) : '';
-        $interval  = $item_id ? get_post_meta( $item_id, 'pit_interval', true ) : '';
-        $status    = $item_id ? get_post_meta( $item_id, 'pit_status', true ) : 'in_stock';
+        // Get all meta values in one call to avoid multiple database queries
+        $meta = $item_id ? get_post_meta( $item_id ) : array();
+        $qty       = $item_id ? ( $meta['pit_qty'][0] ?? '' ) : '';
+        $unit      = $item_id ? ( $meta['pit_unit'][0] ?? '' ) : '';
+        $last      = $item_id ? ( $meta['pit_last_purchased'][0] ?? '' ) : '';
+        $threshold = $item_id ? ( $meta['pit_threshold'][0] ?? '' ) : '';
+        $interval  = $item_id ? ( $meta['pit_interval'][0] ?? '' ) : '';
+        $status    = $item_id ? ( $meta['pit_status'][0] ?? 'in_stock' ) : 'in_stock';
 
         echo '<tr><th><label for="pit_qty">' . esc_html__( 'Quantity', 'personal-inventory-tracker' ) . '</label></th>';
         echo '<td><input name="pit_qty" id="pit_qty" type="number" value="' . esc_attr( $qty ) . '" aria-describedby="pit_qty_help" /><p id="pit_qty_help" class="description">' . esc_html__( 'Current number of items on hand.', 'personal-inventory-tracker' ) . '</p></td></tr>';
