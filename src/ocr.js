@@ -53,6 +53,12 @@ export function bindOcrToInput(input, callback, minConfidence = 60) {
     console.warn('OCR binding skipped: not in a browser');
     return;
   }
+  
+  if (!input || typeof input.addEventListener !== 'function') {
+    console.warn('OCR binding skipped: invalid input element');
+    return;
+  }
+  
   input.addEventListener('change', async () => {
     const [file] = input.files;
     if (file) {
