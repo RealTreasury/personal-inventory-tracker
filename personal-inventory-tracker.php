@@ -28,7 +28,10 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
     WP_CLI::add_command( 'pit cache', 'RealTreasury\Inventory\CLI\Cache_Command' );
 }
 
-// Enhanced REST API Class
+// Initialize the plugin
+RealTreasury\Inventory\Plugin::get_instance();
+
+// Legacy Enhanced REST API Class (deprecated - will be removed in future version)
 class PIT_Enhanced_REST {
     
     public function register_routes() {
@@ -858,13 +861,13 @@ function pit_ocr_scanner_shortcode() {
     return ob_get_clean();
 }
 
-// Initialize enhanced functionality
+// Legacy initialization for backward compatibility
 function pit_init_enhanced() {
-    // Register enhanced REST API
+    // Register legacy REST API for backward compatibility
     $rest_api = new PIT_Enhanced_REST();
     add_action('rest_api_init', [$rest_api, 'register_routes']);
     
-    // Register shortcode
+    // Register shortcodes
     add_shortcode('pit_enhanced', 'pit_enhanced_shortcode');
     add_shortcode('pit_dashboard', 'pit_enhanced_shortcode');
     add_shortcode('personal_inventory', 'pit_enhanced_shortcode');
@@ -874,45 +877,12 @@ function pit_init_enhanced() {
     add_shortcode('pit_app', 'pit_enhanced_shortcode');
 }
 
-// Activation/Deactivation hooks
-function pit_activate() {
-    \RealTreasury\Inventory\CPT::activate();
-    \RealTreasury\Inventory\Taxonomy::activate();
-    \RealTreasury\Inventory\Cron::activate();
-    \RealTreasury\Inventory\Settings::activate();
-    \RealTreasury\Inventory\Capabilities::add_capabilities();
-    
-    add_option('pit_version', PIT_VERSION);
-
-    flush_rewrite_rules();
-}
-
-function pit_deactivate() {
-    \RealTreasury\Inventory\CPT::deactivate();
-    \RealTreasury\Inventory\Taxonomy::deactivate();
-    \RealTreasury\Inventory\Cron::deactivate();
-    \RealTreasury\Inventory\Capabilities::remove_capabilities();
-    flush_rewrite_rules();
-}
-
-// Register hooks
-register_activation_hook(PIT_PLUGIN_FILE, 'pit_activate');
-register_deactivation_hook(PIT_PLUGIN_FILE, 'pit_deactivate');
-register_activation_hook(PIT_PLUGIN_FILE, array( \RealTreasury\Inventory\Database::class, 'migrate' ) );
-register_deactivation_hook(PIT_PLUGIN_FILE, array( \RealTreasury\Inventory\Database::class, 'rollback' ) );
-
-// Initialize
-add_action('init', [\RealTreasury\Inventory\CPT::class, 'register']);
-add_action('init', [\RealTreasury\Inventory\Taxonomy::class, 'register']);
-add_action('plugins_loaded', [\RealTreasury\Inventory\Database::class, 'migrate']);
+// Legacy hooks for backward compatibility
 add_action('plugins_loaded', function() {
     pit_init_enhanced();
-    ( new \RealTreasury\Inventory\Admin\Admin() )->init();
-    \RealTreasury\Inventory\Cron::init();
-    \RealTreasury\Inventory\Settings::init();
 });
 
-// Admin enqueue (keep existing admin functionality)
+// Admin enqueue
 add_action('admin_enqueue_scripts', function($hook) {
     if (strpos($hook, 'pit_') !== false) {
         wp_enqueue_style('pit-admin', PIT_PLUGIN_URL . 'assets/admin.css', [], PIT_VERSION);
