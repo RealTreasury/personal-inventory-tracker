@@ -1,4 +1,14 @@
 <?php
+/**
+ * WordPress admin interface management for Personal Inventory Tracker.
+ *
+ * This class handles all admin-related functionality including menu registration,
+ * page rendering, form processing, and admin notices. It provides the main
+ * interface for users to manage their inventory through the WordPress admin.
+ *
+ * @package PersonalInventoryTracker
+ * @since 1.0.0
+ */
 
 namespace RealTreasury\Inventory\Admin;
 
@@ -9,7 +19,25 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+/**
+ * Admin interface management class.
+ *
+ * Manages all WordPress admin functionality for the plugin including
+ * menu registration, page rendering, form processing, and notices.
+ *
+ * @since 1.0.0
+ */
 class Admin {
+
+    /**
+     * Initialize admin hooks and actions.
+     *
+     * Sets up all WordPress hooks needed for admin functionality including
+     * menu registration, form processing, and notice management.
+     *
+     * @since 1.0.0
+     * @return void
+     */
 
     public function init() {
         add_action( 'admin_menu', array( $this, 'register_menu' ) );
@@ -23,6 +51,15 @@ class Admin {
         add_action( 'pit_category_auto_assigned', array( $this, 'store_auto_category_notice' ), 10, 2 );
     }
 
+    /**
+     * Register admin menu pages and submenus.
+     *
+     * Creates the main plugin menu and all submenu pages in the WordPress admin.
+     * Each page requires the 'manage_inventory_items' capability to access.
+     *
+     * @since 1.0.0
+     * @return void
+     */
     public function register_menu() {
         $cap = 'manage_inventory_items';
         add_menu_page( __( 'Inventory (PIT)', 'personal-inventory-tracker' ), __( 'Inventory (PIT)', 'personal-inventory-tracker' ), $cap, 'pit_dashboard', array( $this, 'dashboard_page' ), 'dashicons-archive', 26 );

@@ -48,10 +48,6 @@ function update_option( $option, $value ) {
     return true;
 }
 
-function version_compare( $version1, $version2, $operator = null ) {
-    return version_compare( $version1, $version2, $operator );
-}
-
 if ( ! defined( 'ABSPATH' ) ) {
     define( 'ABSPATH', __DIR__ );
 }
