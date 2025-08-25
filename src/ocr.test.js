@@ -1,4 +1,4 @@
-const ocr = require('./ocr');
+import * as ocr from './ocr.js';
 
 describe('OCR failure handling', () => {
   test('extractItemSuggestions returns empty array when Tesseract fails to load', async () => {

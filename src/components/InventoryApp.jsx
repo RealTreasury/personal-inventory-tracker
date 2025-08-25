@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import {
   Search, Plus, Camera, BarChart3,
-  TrendingUp, Package, AlertTriangle, CheckCircle,
-  Filter, Sort, Grid, List, Settings, Home, ShoppingCart,
-  Calendar, PieChart, Activity, Trash2, Edit, Eye
+  Package, AlertTriangle, CheckCircle,
+  Grid, List, Home,
+  PieChart, Trash2, Edit, Eye
 } from 'lucide-react';
 const AnalyticsView = lazy(() => import('./AnalyticsView.jsx'));
 const OCRScannerView = lazy(() => import('./OCRScannerView.jsx'));
@@ -16,7 +16,6 @@ const InventoryApp = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [viewMode, setViewMode] = useState('grid'); // grid, list
-  const [selectedItems, setSelectedItems] = useState(new Set());
 
   // Fetch items from API
   const fetchItems = useCallback(async () => {
@@ -271,6 +270,7 @@ const InventoryApp = () => {
   );
 
   // Item Card Component
+  /* eslint-disable react/prop-types */
   const ItemCard = ({ item, viewMode }) => {
     const isLowStock = (item.qty || 0) <= 5;
     
@@ -345,6 +345,7 @@ const InventoryApp = () => {
       </div>
     );
   };
+  /* eslint-enable react/prop-types */
 
   if (loading) {
     return (

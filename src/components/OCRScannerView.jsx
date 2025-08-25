@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import {
   Camera, Upload, X, Check, AlertCircle,
   Loader2, Zap, Settings, Plus
@@ -274,6 +275,12 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
     );
   };
 
+  // PropTypes for SettingsPanel
+  SettingsPanel.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+  };
+
   const [showSettings, setShowSettings] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
 
@@ -529,6 +536,17 @@ const OCRScannerView = ({ onItemsExtracted, items = [] }) => {
       />
     </div>
   );
+};
+
+// PropTypes definitions
+OCRScannerView.propTypes = {
+  onItemsExtracted: PropTypes.func,
+  items: PropTypes.arrayOf(PropTypes.object),
+};
+
+OCRScannerView.defaultProps = {
+  onItemsExtracted: () => {},
+  items: [],
 };
 
 export default OCRScannerView;

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { CheckCircle, AlertTriangle, Package } from 'lucide-react';
 import Chart from 'chart.js/auto';
 
@@ -135,6 +136,15 @@ const AnalyticsView = ({ timeRange = 30 }) => {
       </div>
     </div>
   );
+};
+
+// PropTypes for AnalyticsView
+AnalyticsView.propTypes = {
+  timeRange: PropTypes.number,
+};
+
+AnalyticsView.defaultProps = {
+  timeRange: 30,
 };
 
 export default AnalyticsView;
