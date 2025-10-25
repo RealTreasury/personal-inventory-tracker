@@ -248,12 +248,33 @@ class PIT_Enhanced_REST {
             return $post_id;
         }
 
-        // Update metadata
+        // Update basic metadata
         update_post_meta($post_id, 'pit_qty', $qty);
         update_post_meta($post_id, 'pit_unit', $unit);
         update_post_meta($post_id, 'pit_threshold', $threshold);
         update_post_meta($post_id, 'pit_notes', $notes);
         update_post_meta($post_id, 'pit_created_via', 'frontend');
+
+        // Update enterprise metadata
+        $enterprise_fields = [
+            'barcode', 'sku', 'brand', 'model', 'serial_number',
+            'purchase_price', 'expiration', 'location_id', 'vendor',
+            'purchase_date', 'warranty_info'
+        ];
+
+        foreach ($enterprise_fields as $field) {
+            if ($request->has_param($field)) {
+                $value = $request->get_param($field);
+                if ($field === 'location_id') {
+                    $value = absint($value);
+                } elseif ($field === 'purchase_price') {
+                    $value = floatval($value);
+                } else {
+                    $value = sanitize_text_field($value);
+                }
+                update_post_meta($post_id, "pit_{$field}", $value);
+            }
+        }
 
         // Set category
         if ($category) {
@@ -263,19 +284,26 @@ class PIT_Enhanced_REST {
             }
         }
 
+        // Log creation
+        \RealTreasury\Inventory\Models\AuditLog::log('create', 'item', $post_id, null, [
+            'title' => $title,
+            'qty' => $qty
+        ]);
+
         return rest_ensure_response($this->prepare_item(get_post($post_id)));
     }
 
     // Update item
     public function update_item($request) {
         $post_id = absint($request->get_param('id'));
-        
+
         if (!get_post($post_id) || get_post_type($post_id) !== 'pit_item') {
             return new WP_Error('item_not_found', 'Item not found', ['status' => 404]);
         }
 
+        $old_item = $this->prepare_item(get_post($post_id));
         $updates = [];
-        
+
         if ($request->has_param('title')) {
             wp_update_post([
                 'ID' => $post_id,
@@ -283,12 +311,21 @@ class PIT_Enhanced_REST {
             ]);
         }
 
-        $meta_fields = ['qty', 'unit', 'threshold', 'notes', 'last_purchased'];
+        // Basic metadata fields
+        $meta_fields = [
+            'qty', 'unit', 'threshold', 'notes', 'last_purchased',
+            'barcode', 'sku', 'brand', 'model', 'serial_number',
+            'purchase_price', 'expiration', 'location_id', 'vendor',
+            'purchase_date', 'warranty_info'
+        ];
+
         foreach ($meta_fields as $field) {
             if ($request->has_param($field)) {
                 $value = $request->get_param($field);
-                if (in_array($field, ['qty', 'threshold'])) {
+                if (in_array($field, ['qty', 'threshold', 'location_id'])) {
                     $value = absint($value);
+                } elseif ($field === 'purchase_price') {
+                    $value = floatval($value);
                 } else {
                     $value = sanitize_text_field($value);
                 }
@@ -304,6 +341,11 @@ class PIT_Enhanced_REST {
                 update_post_meta($post_id, 'pit_last_purchased', current_time('Y-m-d'));
             }
         }
+
+        // Log update
+        \RealTreasury\Inventory\Models\AuditLog::log('update', 'item', $post_id, $old_item, [
+            'updated_fields' => array_keys($request->get_params())
+        ]);
 
         return rest_ensure_response($this->prepare_item(get_post($post_id)));
     }
@@ -590,7 +632,7 @@ class PIT_Enhanced_REST {
         if (!$post) return null;
 
         $categories = wp_get_post_terms($post->ID, 'pit_category', ['fields' => 'names']);
-        
+
         return [
             'id' => $post->ID,
             'title' => $post->post_title,
@@ -601,6 +643,17 @@ class PIT_Enhanced_REST {
             'last_purchased' => get_post_meta($post->ID, 'pit_last_purchased', true),
             'notes' => get_post_meta($post->ID, 'pit_notes', true),
             'category' => $categories ? $categories[0] : null,
+            'barcode' => get_post_meta($post->ID, 'pit_barcode', true),
+            'sku' => get_post_meta($post->ID, 'pit_sku', true),
+            'brand' => get_post_meta($post->ID, 'pit_brand', true),
+            'model' => get_post_meta($post->ID, 'pit_model', true),
+            'serial_number' => get_post_meta($post->ID, 'pit_serial_number', true),
+            'purchase_price' => get_post_meta($post->ID, 'pit_purchase_price', true),
+            'expiration' => get_post_meta($post->ID, 'pit_expiration', true),
+            'location_id' => absint(get_post_meta($post->ID, 'pit_location_id', true)),
+            'vendor' => get_post_meta($post->ID, 'pit_vendor', true),
+            'purchase_date' => get_post_meta($post->ID, 'pit_purchase_date', true),
+            'warranty_info' => get_post_meta($post->ID, 'pit_warranty_info', true),
             'created_at' => $post->post_date,
             'updated_at' => $post->post_modified,
             'status' => $this->get_item_status($post->ID)
@@ -863,7 +916,11 @@ function pit_init_enhanced() {
     // Register enhanced REST API
     $rest_api = new PIT_Enhanced_REST();
     add_action('rest_api_init', [$rest_api, 'register_routes']);
-    
+
+    // Register enterprise REST API
+    $enterprise_api = new \RealTreasury\Inventory\REST\EnterpriseApi();
+    add_action('rest_api_init', [$enterprise_api, 'register_routes']);
+
     // Register shortcode
     add_shortcode('pit_enhanced', 'pit_enhanced_shortcode');
     add_shortcode('pit_dashboard', 'pit_enhanced_shortcode');
