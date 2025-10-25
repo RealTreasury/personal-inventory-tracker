@@ -139,20 +139,23 @@ class Maintenance {
             'last_performed' => $last_performed,
             'next_due'       => $next_due,
         );
+        $format = array( '%s', '%s' );
 
         if ( isset( $data['cost'] ) ) {
             $update_data['cost'] = floatval( $data['cost'] );
+            $format[] = '%f';
         }
 
         if ( isset( $data['notes'] ) ) {
             $update_data['notes'] = sanitize_textarea_field( $data['notes'] );
+            $format[] = '%s';
         }
 
         return $wpdb->update(
             $table,
             $update_data,
             array( 'id' => $id ),
-            array( '%s', '%s', '%f', '%s' ),
+            $format,
             array( '%d' )
         );
     }

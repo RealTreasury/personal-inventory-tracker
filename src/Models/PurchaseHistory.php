@@ -156,17 +156,43 @@ class PurchaseHistory {
         global $wpdb;
         $table = $wpdb->prefix . 'pit_purchase_history';
 
-        $date_format = $period === 'day' ? '%Y-%m-%d' : ( $period === 'week' ? '%Y-%u' : '%Y-%m' );
+        $allowed_periods = array(
+            'day' => array(
+                'format'  => '%Y-%m-%d',
+                'keyword' => 'DAY',
+            ),
+            'week' => array(
+                'format'  => '%Y-%u',
+                'keyword' => 'WEEK',
+            ),
+            'month' => array(
+                'format'  => '%Y-%m',
+                'keyword' => 'MONTH',
+            ),
+        );
+
+        $period = strtolower( $period );
+        if ( ! isset( $allowed_periods[ $period ] ) ) {
+            $period = 'month';
+        }
+
+        $period_config = $allowed_periods[ $period ];
+        $limit         = absint( $limit );
+        $interval_keyword = $period_config['keyword'];
+
+        if ( 0 === $limit ) {
+            $limit = 12;
+        }
 
         $sql = $wpdb->prepare(
             "SELECT DATE_FORMAT(purchase_date, %s) as period,
                     SUM(total_price) as total_spent,
                     COUNT(*) as purchase_count
             FROM {$table}
-            WHERE purchase_date >= DATE_SUB(NOW(), INTERVAL %d " . strtoupper( $period ) . ")
+            WHERE purchase_date >= DATE_SUB(NOW(), INTERVAL %d {$interval_keyword})
             GROUP BY period
             ORDER BY period ASC",
-            $date_format,
+            $period_config['format'],
             $limit
         );
 
