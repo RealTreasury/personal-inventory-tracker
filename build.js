@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
+const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const isDev = args.includes('--dev');
@@ -18,12 +19,49 @@ const baseConfig = {
 
 const artifactsDir = path.join(__dirname, 'artifacts');
 
-function processCss() {
-  const cssFile = path.join(artifactsDir, 'enhanced_css.css');
-  if (!fs.existsSync(cssFile)) return;
-  let css = fs.readFileSync(cssFile, 'utf8');
-  css = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ').trim();
-  fs.writeFileSync(path.join(__dirname, 'assets', 'app.css'), css);
+async function processCss() {
+  try {
+    const inputCss = path.join(__dirname, 'src', 'styles.css');
+    const outputCss = path.join(__dirname, 'assets', 'app.css');
+
+    // Try to use tailwindcss CLI directly from node_modules
+    const tailwindBin = path.join(__dirname, 'node_modules', '.bin', 'tailwindcss');
+
+    if (fs.existsSync(tailwindBin)) {
+      const tailwindCmd = `${tailwindBin} -i ${inputCss} -o ${outputCss} ${isDev ? '' : '--minify'}`;
+      execSync(tailwindCmd, { stdio: 'inherit' });
+      console.log('✓ CSS processed with Tailwind');
+    } else {
+      // Fallback: use node to run tailwindcss
+      const postcss = require('postcss');
+      const tailwindcss = require('tailwindcss');
+      const autoprefixer = require('autoprefixer');
+
+      const css = fs.readFileSync(inputCss, 'utf8');
+      const result = await postcss([tailwindcss, autoprefixer]).process(css, {
+        from: inputCss,
+        to: outputCss,
+      });
+
+      let output = result.css;
+      if (!isDev) {
+        // Simple minification
+        output = output.replace(/\s+/g, ' ').replace(/;\s}/g, '}').trim();
+      }
+
+      fs.writeFileSync(outputCss, output);
+      console.log('✓ CSS processed with Tailwind (via PostCSS)');
+    }
+  } catch (error) {
+    console.error('Error processing CSS:', error);
+    // Fallback to old method if Tailwind fails
+    const cssFile = path.join(artifactsDir, 'enhanced_css.css');
+    if (fs.existsSync(cssFile)) {
+      let css = fs.readFileSync(cssFile, 'utf8');
+      css = css.replace(/\/\*[^]*?\*\//g, '').replace(/\s+/g, ' ').trim();
+      fs.writeFileSync(path.join(__dirname, 'assets', 'app.css'), css);
+    }
+  }
 }
 
 function copyTesseract() {
@@ -95,7 +133,7 @@ async function build(config) {
 }
 
 async function run() {
-  processCss();
+  await processCss();
   copyTesseract();
   const enhancedReadme = `
 # Personal Inventory Tracker Enhanced
