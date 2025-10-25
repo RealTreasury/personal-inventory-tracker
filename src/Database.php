@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Database {
 
-    const SCHEMA_VERSION = '1.1';
+    const SCHEMA_VERSION = '2.0';
 
     /**
      * Run database migrations.
@@ -25,6 +25,7 @@ class Database {
         self::migrate_schema();
         self::migrate_data( $installed_version );
         self::cleanup_deprecated_meta_keys();
+        self::create_custom_tables();
 
         update_option( 'pit_db_version', self::SCHEMA_VERSION );
     }
@@ -49,6 +50,166 @@ class Database {
                 $wpdb->query( $sql );
             }
         }
+    }
+
+    /**
+     * Create custom tables for enterprise features.
+     */
+    private static function create_custom_tables() {
+        global $wpdb;
+        $charset_collate = $wpdb->get_charset_collate();
+
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+        // Locations table
+        $locations_table = $wpdb->prefix . 'pit_locations';
+        $sql = "CREATE TABLE {$locations_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            parent_id bigint(20) unsigned DEFAULT NULL,
+            name varchar(255) NOT NULL,
+            type varchar(50) DEFAULT 'room',
+            description text,
+            metadata longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY parent_id (parent_id),
+            KEY type (type)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Purchase history table
+        $purchase_history_table = $wpdb->prefix . 'pit_purchase_history';
+        $sql = "CREATE TABLE {$purchase_history_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            item_id bigint(20) unsigned NOT NULL,
+            vendor varchar(255),
+            purchase_date datetime,
+            quantity int(11) DEFAULT 0,
+            unit_price decimal(10,2),
+            total_price decimal(10,2),
+            currency varchar(10) DEFAULT 'USD',
+            receipt_url varchar(500),
+            notes text,
+            metadata longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY item_id (item_id),
+            KEY purchase_date (purchase_date)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Warranties table
+        $warranties_table = $wpdb->prefix . 'pit_warranties';
+        $sql = "CREATE TABLE {$warranties_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            item_id bigint(20) unsigned NOT NULL,
+            warranty_type varchar(100),
+            provider varchar(255),
+            start_date date,
+            end_date date,
+            coverage_details text,
+            document_url varchar(500),
+            reminder_days int(11) DEFAULT 30,
+            metadata longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY item_id (item_id),
+            KEY end_date (end_date)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Maintenance schedule table
+        $maintenance_table = $wpdb->prefix . 'pit_maintenance';
+        $sql = "CREATE TABLE {$maintenance_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            item_id bigint(20) unsigned NOT NULL,
+            maintenance_type varchar(100),
+            frequency varchar(50),
+            last_performed datetime,
+            next_due datetime,
+            cost decimal(10,2),
+            notes text,
+            metadata longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY item_id (item_id),
+            KEY next_due (next_due)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Audit log table
+        $audit_table = $wpdb->prefix . 'pit_audit_log';
+        $sql = "CREATE TABLE {$audit_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) unsigned,
+            action varchar(50) NOT NULL,
+            entity_type varchar(50) NOT NULL,
+            entity_id bigint(20) unsigned,
+            old_value longtext,
+            new_value longtext,
+            ip_address varchar(100),
+            user_agent varchar(500),
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY entity (entity_type, entity_id),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Custom fields table
+        $custom_fields_table = $wpdb->prefix . 'pit_custom_fields';
+        $sql = "CREATE TABLE {$custom_fields_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            item_id bigint(20) unsigned NOT NULL,
+            field_name varchar(255) NOT NULL,
+            field_value longtext,
+            field_type varchar(50) DEFAULT 'text',
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY item_id (item_id),
+            KEY field_name (field_name(191))
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Notifications table
+        $notifications_table = $wpdb->prefix . 'pit_notifications';
+        $sql = "CREATE TABLE {$notifications_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            user_id bigint(20) unsigned NOT NULL,
+            item_id bigint(20) unsigned,
+            type varchar(50) NOT NULL,
+            title varchar(255) NOT NULL,
+            message text,
+            is_read tinyint(1) DEFAULT 0,
+            metadata longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY user_id (user_id),
+            KEY item_id (item_id),
+            KEY is_read (is_read),
+            KEY created_at (created_at)
+        ) $charset_collate;";
+        dbDelta( $sql );
+
+        // Attachments table
+        $attachments_table = $wpdb->prefix . 'pit_attachments';
+        $sql = "CREATE TABLE {$attachments_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            item_id bigint(20) unsigned NOT NULL,
+            attachment_id bigint(20) unsigned NOT NULL,
+            type varchar(50) DEFAULT 'image',
+            title varchar(255),
+            description text,
+            sort_order int(11) DEFAULT 0,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY item_id (item_id),
+            KEY attachment_id (attachment_id)
+        ) $charset_collate;";
+        dbDelta( $sql );
     }
 
     /**
